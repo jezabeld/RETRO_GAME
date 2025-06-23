@@ -1,17 +1,21 @@
 /*
- * TFT_CMD.c
+ * TFT_ST7735.c
  *
  *  Created on: May 5, 2025
  *      Author: jez
  */
 
 #include "TFT_ST7735.h"
-#include "stdint.h"
+#include "string.h"
+#include "stdlib.h"
 
 extern SPI_HandleTypeDef hspi1;
 
 #define ST_CMD_DELAY 0x80 // special signifier for command lists
 #define MAX_DELAY_MS 500
+#define TFT_IS_160X128 1
+#define TFT_XSTART 0
+#define TFT_YSTART 0
 // Commands
 #define CMD_NOP 0x00
 #define CMD_SWRESET 0x01
@@ -142,9 +146,39 @@ static const uint8_t initCmds[] = {    // ST7735R init
 	  100                         	//     100 ms delay
 };
 
-void sendCommand(tft_t * tft, uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes)
+void tftDelay(uint32_t ms){
+	HAL_Delay(ms);
+}
+
+void tftSelect(tft_t * tft){
+	HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_RESET);
+}
+void tftUnselect(tft_t * tft){
+	HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_SET);
+}
+void tftReset(tft_t * tft){
+	// Reset físico
+	HAL_GPIO_WritePin(tft->resPort, tft->resPin, GPIO_PIN_RESET);
+	HAL_Delay(10);
+	HAL_GPIO_WritePin(tft->resPort, tft->resPin, GPIO_PIN_SET);
+	HAL_Delay(120);
+}
+
+/* Manda un comando suelto */
+void tftWriteCommand(tft_t * tft, uint8_t cmd) {
+    HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(tft->hSpi, &cmd, sizeof(cmd), HAL_MAX_DELAY);
+}
+/* Manda un conjunto de data*/
+void tftWriteData(tft_t * tft, uint8_t* buff, size_t buff_size) {
+    HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_SET);
+    HAL_SPI_Transmit(tft->hSpi, buff, buff_size, HAL_MAX_DELAY);
+}
+
+/* Manda un comando con sus parametros */
+void tftSendCommand(tft_t * tft, uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes)
 {
-  HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_RESET); // CS low
+  //HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_RESET); // CS low - ahora se hace en Select
   HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_RESET); // command mode
 
   HAL_SPI_Transmit(tft->hSpi, &commandByte, 1, HAL_MAX_DELAY); // send command
@@ -155,15 +189,31 @@ void sendCommand(tft_t * tft, uint8_t commandByte, const uint8_t *dataBytes, uin
 	  HAL_SPI_Transmit(tft->hSpi, dataBytes, 1, HAL_MAX_DELAY);
       dataBytes++; // avanza el puntero
   }
+  //HAL_GPIO_WritePin(tft->csPort,tft->csPin, GPIO_PIN_SET);	// CS high -  ahora en Unselect
+}
+
+void receiveParams(tft_t * tft, uint8_t commandByte, uint8_t *dataBytes, uint8_t numDataBytes)
+{
+  HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_RESET); // CS low
+  HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_RESET); // command mode
+
+  HAL_SPI_Transmit(tft->hSpi, &commandByte, 1, HAL_MAX_DELAY); // send command
+
+  HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_SET); // param/data mode
+
+  for (int i = 0; i < numDataBytes; i++) {					// receive params
+	  HAL_SPI_Receive(tft->hSpi, dataBytes, 1, HAL_MAX_DELAY);
+      dataBytes++; // avanza el puntero
+  }
   HAL_GPIO_WritePin(tft->csPort,tft->csPin, GPIO_PIN_SET);	// CS high
 }
 
-void setRotation(tft_t * tft){
+void tftSetRotation(tft_t * tft){
 	uint8_t madctl = MADCTL_MX | MADCTL_MY | MADCTL_RGB;
-	sendCommand(tft, CMD_MADCTL, &madctl, 1);
+	tftSendCommand(tft, CMD_MADCTL, &madctl, 1);
 }
 
-void setUpDisplay(tft_t * tft, const uint8_t * addr)
+void tftExecuteCommandList(tft_t * tft, const uint8_t * addr)
 {
 	uint8_t numCommands, cmd, numArgs;
 	uint16_t ms;
@@ -175,7 +225,7 @@ void setUpDisplay(tft_t * tft, const uint8_t * addr)
 		ms = numArgs & ST_CMD_DELAY;       // If hi-bit set, delay follows args
 		numArgs &= ~ST_CMD_DELAY;          // Mask out delay bit
 
-		sendCommand(tft, cmd, addr, numArgs);
+		tftSendCommand(tft, cmd, addr, numArgs);
 		addr += numArgs;
 
 		if (ms) {
@@ -183,7 +233,7 @@ void setUpDisplay(tft_t * tft, const uint8_t * addr)
 		  if (ms == 255){
 			ms = MAX_DELAY_MS; // If 255, delay for 500 ms
 		  }
-		  HAL_Delay(ms);
+		  tftDelay(ms);
 		}
 	}
 }
@@ -202,21 +252,122 @@ void tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
 	tft->resPort = resPort;
 	tft->resPin = resPin;
 
-	setUpDisplay(tft, initCmds);
+	tftSelect(tft);
+	tftReset(tft);
+	tftExecuteCommandList(tft, initCmds);
+	tftUnselect(tft);
 }
 
-void receiveParams(tft_t * tft, uint8_t commandByte, uint8_t *dataBytes, uint8_t numDataBytes)
-{
-  HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_RESET); // CS low
-  HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_RESET); // command mode
+void tftSetAddressWindow(tft_t * tft, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
+	// x: 0 - 127, y: 0 - 159
 
-  HAL_SPI_Transmit(tft->hSpi, &commandByte, 1, HAL_MAX_DELAY); // send command
+    // column address set
+	tftWriteCommand(tft, (uint8_t)CMD_CASET);
+    uint8_t data[] = { 0x00, x0 + TFT_XSTART, 0x00, x1 + TFT_XSTART };
+    tftWriteData(tft, data, sizeof(data));
 
-  HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_SET); // param/data mode
+    // row address set
+    tftWriteCommand(tft, (uint8_t)CMD_RASET);
+    data[1] = y0 + TFT_YSTART;
+    data[3] = y1 + TFT_YSTART;
+    tftWriteData(tft, data, sizeof(data));
 
-  for (int i = 0; i < numDataBytes; i++) {					// receive params
-	  HAL_SPI_Receive(tft->hSpi, dataBytes, 1, HAL_MAX_DELAY);
-      dataBytes++; // avanza el puntero
-  }
-  HAL_GPIO_WritePin(tft->csPort,tft->csPin, GPIO_PIN_SET);	// CS high
+    // write to RAM
+    tftWriteCommand(tft, (uint8_t)CMD_RAMWR);
+}
+
+void tftDrawPixel(tft_t * tft, uint8_t x, uint8_t y, uint16_t color) {
+    if((x >= TFT_WIDTH) || (y >= TFT_HEIGHT))
+        return;
+
+    tftSelect(tft);
+
+    tftSetAddressWindow(tft, x, y, x+1, y+1);
+    uint8_t data[] = { color >> 8, color & 0xFF };
+    tftWriteData(tft, data, sizeof(data));
+
+    tftUnselect(tft);
+}
+
+void tftWriteChar(tft_t * tft, uint8_t x, uint8_t y, char ch, FontDef font, uint16_t color, uint16_t bgcolor) {
+    uint32_t i, b, j;
+
+    tftSetAddressWindow(tft, x, y, x+font.width-1, y+font.height-1);
+
+    for(i = 0; i < font.height; i++) {
+        b = font.data[(ch - 32) * font.height + i];
+        for(j = 0; j < font.width; j++) {
+            if((b << j) & 0x8000)  {
+                uint8_t data[] = { color >> 8, color & 0xFF };
+                tftWriteData(tft, data, sizeof(data));
+            } else {
+                uint8_t data[] = { bgcolor >> 8, bgcolor & 0xFF };
+                tftWriteData(tft, data, sizeof(data));
+            }
+        }
+    }
+}
+
+void tftWriteString(tft_t * tft, uint16_t x, uint16_t y, const char* str, FontDef font, uint16_t color, uint16_t bgcolor) {
+	tftSelect(tft);
+
+    while(*str) {
+        if(x + font.width >= TFT_WIDTH) {
+            x = 0;
+            y += font.height;
+            if(y + font.height >= TFT_HEIGHT) {
+                break;
+            }
+
+            if(*str == ' ') {
+                // skip spaces in the beginning of the new line
+                str++;
+                continue;
+            }
+        }
+
+        tftWriteChar(tft, x, y, *str, font, color, bgcolor);
+        x += font.width;
+        str++;
+    }
+
+    tftUnselect(tft);
+}
+
+void tftFillRectangleFast(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+    // clipping
+    if((x >= TFT_WIDTH) || (y >= TFT_HEIGHT)) return;
+    if((x + w - 1) >= TFT_WIDTH) w = TFT_WIDTH - x;
+    if((y + h - 1) >= TFT_HEIGHT) h = TFT_HEIGHT - y;
+
+    tftSelect(tft);
+    tftSetAddressWindow(tft, x, y, x+w-1, y+h-1);
+
+    // Prepare whole line in a single buffer
+    uint8_t pixel[] = { color >> 8, color & 0xFF };
+    uint8_t *line = malloc(w * sizeof(pixel));
+    for(x = 0; x < w; ++x)
+    	memcpy(line + x * sizeof(pixel), pixel, sizeof(pixel));
+
+    HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_SET);
+    for(y = h; y > 0; y--)
+        HAL_SPI_Transmit(tft->hSpi, line, w * sizeof(pixel), HAL_MAX_DELAY);
+
+    free(line);
+    tftUnselect(tft);
+}
+
+void tftFillScreenFast(tft_t * tft, uint16_t color) {
+	tftFillRectangleFast(tft, 0, 0, TFT_WIDTH, TFT_HEIGHT, color);
+}
+
+void tftDrawImage(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data) {
+    if((x >= TFT_WIDTH) || (y >= TFT_HEIGHT)) return;
+    if((x + w - 1) >= TFT_WIDTH) return;
+    if((y + h - 1) >= TFT_HEIGHT) return;
+
+    tftSelect(tft);
+    tftSetAddressWindow(tft, x, y, x+w-1, y+h-1);
+    tftWriteData(tft, (uint8_t*)data, sizeof(uint16_t)*w*h);
+    tftUnselect(tft);
 }

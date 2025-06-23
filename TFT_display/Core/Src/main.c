@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "API_uart.h"
 #include "TFT_ST7735.h"
+#include "testimg.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -109,12 +110,6 @@ int main(void)
   const uint8_t CMD_RDDID 	= 0x04;
 */
 
-  // Reset físico manual
-  HAL_GPIO_WritePin(TFT_RS_GPIO_Port, TFT_RS_Pin, GPIO_PIN_RESET);
-  HAL_Delay(10);
-  HAL_GPIO_WritePin(TFT_RS_GPIO_Port, TFT_RS_Pin, GPIO_PIN_SET);
-  HAL_Delay(120);
-
   tft_t myTft;
 
   tftInit(&myTft, &hspi1, TFT_CS_GPIO_Port, TFT_CS_Pin, TFT_DC_GPIO_Port, TFT_DC_Pin, TFT_RS_GPIO_Port, TFT_RS_Pin);
@@ -144,27 +139,9 @@ int main(void)
 
 
   // ---------- Comenzar escritura de memoria ----------
-  HAL_GPIO_WritePin(TFT_CS_GPIO_Port, TFT_CS_Pin, GPIO_PIN_RESET);
-
-  HAL_GPIO_WritePin(TFT_DC_GPIO_Port, TFT_DC_Pin, GPIO_PIN_RESET);
-  cmd = 0x2C; // RAMWR
-  HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
-
-  // Enviar color (ejemplo: rojo 0xF800)
-  HAL_GPIO_WritePin(TFT_DC_GPIO_Port, TFT_DC_Pin, GPIO_PIN_SET);
-  uint16_t color = 0xF800; // Rojo RGB565
-
-  // Repetir para cada píxel
-  uint8_t pixel_data[2];
-  pixel_data[0] = color >> 8;     // MSB
-  pixel_data[1] = color & 0xFF;   // LSB
-
-  for (int i = 0; i < 128 * 160; i++) {
-      HAL_SPI_Transmit(&hspi1, pixel_data, 2, HAL_MAX_DELAY);
-  }
-
-  HAL_GPIO_WritePin(TFT_CS_GPIO_Port, TFT_CS_Pin, GPIO_PIN_SET);
-
+//  tftSetAddressWindow(myTft, 0,0, 127,159);
+  //uint16_t color = 0xF800; // Rojo RGB565
+  tftFillScreenFast(&myTft, TFT_COLOR_RED);
 
   /* USER CODE END 2 */
 
@@ -173,6 +150,64 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  // Check border
+	  tftFillScreenFast(&myTft, TFT_COLOR_BLACK);
+
+	  for(int x = 0; x < TFT_WIDTH; x++) {
+		  tftDrawPixel(&myTft, x, 0, TFT_COLOR_RED);
+		  tftDrawPixel(&myTft, x, TFT_HEIGHT-1, TFT_COLOR_RED);
+	  }
+
+	  for(int y = 0; y < TFT_HEIGHT; y++) {
+		  tftDrawPixel(&myTft, 0, y, TFT_COLOR_RED);
+		  tftDrawPixel(&myTft, TFT_WIDTH-1, y, TFT_COLOR_RED);
+	  }
+
+	  HAL_Delay(3000);
+
+	  // Check fonts
+	  tftFillScreenFast(&myTft, TFT_COLOR_BLACK);
+	  tftWriteString(&myTft, 0, 0, "Font_7x10, red on black, lorem ipsum dolor sit amet", Font_7x10, TFT_COLOR_RED, TFT_COLOR_BLACK);
+	  tftWriteString(&myTft, 0, 3*10, "Font_11x18, green, lorem ipsum", Font_11x18, TFT_COLOR_GREEN, TFT_COLOR_BLACK);
+	  tftWriteString(&myTft, 0, 3*10+3*18, "Font_16x26", Font_16x26, TFT_COLOR_BLUE, TFT_COLOR_BLACK);
+	  HAL_Delay(2000);
+
+	  // Check colors
+	  tftFillScreenFast(&myTft, TFT_COLOR_BLACK);
+	  tftWriteString(&myTft, 0, 0, "BLACK", Font_11x18, TFT_COLOR_WHITE, TFT_COLOR_BLACK);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_BLUE);
+	  tftWriteString(&myTft, 0, 0, "BLUE", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_BLUE);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_RED);
+	  tftWriteString(&myTft, 0, 0, "RED", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_RED);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_GREEN);
+	  tftWriteString(&myTft, 0, 0, "GREEN", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_GREEN);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_CYAN);
+	  tftWriteString(&myTft, 0, 0, "CYAN", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_CYAN);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_MAGENTA);
+	  tftWriteString(&myTft, 0, 0, "MAGENTA", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_MAGENTA);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_YELLOW);
+	  tftWriteString(&myTft, 0, 0, "YELLOW", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_YELLOW);
+	  HAL_Delay(500);
+
+	  tftFillScreenFast(&myTft, TFT_COLOR_WHITE);
+	  tftWriteString(&myTft, 0, 0, "WHITE", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_WHITE);
+	  HAL_Delay(500);
+
+	  // Display test image 128x128
+	  tftDrawImage(&myTft, 0, 0, TFT_WIDTH, TFT_WIDTH, (uint16_t*)test_img_128x128);
+	  HAL_Delay(5000);
 
     /* USER CODE BEGIN 3 */
   }
