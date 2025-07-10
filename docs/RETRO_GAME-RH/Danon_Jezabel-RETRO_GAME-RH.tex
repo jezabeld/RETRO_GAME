@@ -1,0 +1,167 @@
+% Created 2025-07-10
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt,a4paper]{article}
+
+% ────────────── Paquetes básicos ──────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx,grffile}
+\usepackage{longtable,wrapfig,rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath,amssymb,textcomp}
+\usepackage{tabularx,lastpage,enumitem}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage[left=2cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{hyperref}
+
+% ────────────── Comandos de metadatos ─────────
+\newcommand*{\autor}[1]{\def\authorname{#1}}
+\newcommand*{\titulo}[1]{\def\@title{#1}\def\ttitle{#1}}
+\newcommand{\versionActual}{A}
+\newcommand{\fechaA}{10/07/2025}
+\newcommand{\docCode}{\normalsize RETRO\_GAME-RH versión \versionActual}
+\newcommand{\fechaActual}{\fechaA}
+
+\titulo{Videojuego portátil inspirado en consolas retro}
+\autor{Lic. Jezabel Danon}
+
+% ────────────── Encabezado / pie ──────────────
+\usepackage{fancyhdr}
+\fancyhf{}
+\pagestyle{fancy}
+\lhead{\includegraphics[width=3.5cm]{Figuras/logoFIUBA.pdf}}
+\rhead{\normalsize\textbf{\@title}\\Especificación de requisitos de hardware\\\docCode}
+\setlength{\headheight}{42pt}
+\setlength{\footskip}{25pt}
+\cfoot{\normalsize Página \thepage{} de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% ────────────── Hipervínculos ─────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  pdftitle={\@title},
+  pdfauthor={\authorname},
+  pdflang={es}
+}
+
+% ────────────── Documento ─────────────────────
+\begin{document}
+
+% ----- Portada -----
+\begin{titlepage}
+  \centering
+  \includegraphics[width=.7\textwidth]{Figuras/logoFIUBA.pdf}\par
+  \vspace{1cm}
+  {\Huge\textbf{\ttitle}}\par
+  \vspace{1.5cm}
+  {\Large\itshape Especificación de requisitos de hardware (ERH)\par}
+  \vspace{3cm}
+  \flushleft
+  {\normalsize Autor:}\par
+  {\Large \authorname\ (jezabel.danon@gmail.com)}\par
+  \vspace{1.5cm}
+  {\scshape\LARGE \fechaActual}\par
+  {\scshape\LARGE Versión \versionActual}\par
+  \vfill
+  \centering
+  \textit{Basado en la guía IEEE 1233-1998 y alineado con la ERS RETRO\_GAME-RS.}
+\end{titlepage}
+
+\clearpage
+\tableofcontents
+\clearpage
+
+% ----- 1 Introducción -----
+\section{Introducción}
+\subsection{Propósito}
+\begin{enumerate}
+  \item Este documento representa una especificación de requerimientos de hardware para el sistema embebido \textit{\ttitle}. 
+  \item Está dirigido a los desarrolladores que se ocupen del análisis, diseño e implementación del hardware, así como también a quienes desarrollen el testing, validaciones y/o verificaciones del mismo.
+\end{enumerate}
+
+\subsection{Ámbito}
+Alcance del hardware cubierto (placa base, periféricos, conectividad).
+\begin{enumerate}
+  \item El hardware a desarrollar se compondrá por los siguiente elementos:
+  \begin{itemize}
+    \item Placa STM32 NUCLEO-F446RE
+    \item Botones
+    \item Joystick analógico
+    \item Acelerómetro
+    \item Pantalla
+    \item Salida de audio
+    \item Motor de vibraciones
+  \end{itemize}
+\end{enumerate}
+
+\subsection{Definiciones, Acrónimos y Abreviaturas}
+
+\subsection{Referencias}
+Lista de datasheets, estándares (IEC, USB-IF, JEDEC), planos eléctricos preliminares.
+
+\begin{enumerate}
+  \item Especificaciones de requisitos de software: RETRO\_GAME-RS-vA.
+  \item \href{https://drive.google.com/file/d/1C3vEYR8wME6EzlZVVC-gT2u86dwnoZA-/view?usp=sharing}{Plan de proyecto del trabajo práctico final} para la \textit{Carrera de Especialización en Sistemas Embebidos} (RETRO\_GAME-PP-v5). 
+  \item Documento de diseño de software: RETRO\_GAME-DD.
+\end{enumerate}
+
+% ----- 2 Requisitos funcionales de hardware -----
+\section{Requisitos funcionales}
+\subsection{Entradas}
+\begin{itemize}
+  \item Botones físicos: 4 x tact switch, tiradores externos con pull-up interno.
+  \item Joystick analógico de dos ejes, rango 0–3,3 V.
+  \item Acelerómetro MEMS ±4 g, interfaz I\textsuperscript{2}C.
+\end{itemize}
+
+\subsection{Salidas}
+\begin{itemize}
+  \item Pantalla TFT 1,8" 128x160 px, controlador ST7735, interfaz SPI a 16 MHz.
+  \item PWM audio vía filtro RC + amplificador mono 1 W.
+  \item Motor vibración ERM + DRV2605L (I\textsuperscript{2}C).
+\end{itemize}
+
+% ----- 3 Requisitos de rendimiento -----
+\section{Requisitos de rendimiento}
+\begin{itemize}
+  \item El bus SPI deberá soportar 16 MHz con \textless{} 1 % de error de reloj.
+  \item La EEPROM externa (24LC512) deberá permitir al menos 400 kHz en I\textsuperscript{2}C.
+  \item Duración mínima de batería: 2 h con brillo al 70 %.
+\end{itemize}
+
+% ----- 4 Requisitos ambientales -----
+\section{Requisitos ambientales}
+\begin{itemize}
+  \item Temperatura de operación: 0 °C – 40 °C.
+  \item Humedad relativa: 10 % – 90 %, sin condensación.
+\end{itemize}
+
+% ----- 5 Restricciones de diseño -----
+\section{Restricciones de diseño}
+\begin{itemize}
+  \item Dimensiones máximas de la PCB: 90 mm × 60 mm.
+  \item Todos los componentes deberán estar disponibles en paquetes SMD.
+  \item Licencia de hardware: CERN OHL v2-P.
+\end{itemize}
+
+% ----- 6 Requisitos de seguridad y EMC -----
+\section{Seguridad y compatibilidad electromagnética}
+\begin{itemize}
+  \item El dispositivo deberá cumplir con IEC 62368-1 para equipos audio/video.
+  \item Emisiones radiadas CE: nivel Clase B (EN 55032).
+\end{itemize}
+
+% ----- 7 Plan de verificación -----
+\section{Plan de verificación}
+Breve descripción de las pruebas: continuidad de pines, consumo, señal SPI, EMC pre-scan.
+
+% ----- 8 Apéndices -----
+\appendix
+\section{Lista de componentes preliminar}
+Tabla BoM simplificada, precios de referencia, códigos de proveedor.
+
+\end{document}
