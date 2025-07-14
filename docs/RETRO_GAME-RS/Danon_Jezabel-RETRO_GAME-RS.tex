@@ -236,7 +236,7 @@ A   & \fechaA   & Creación del documento     & \authorname     &               
 
 \begin{enumerate}
   \item El software especificado en este documento forma parte del sistema embebido \textit{\ttitle} a desarrollar como trabajo final de la \textit{Carrera de Especialización en Sistemas Embebidos}. 
-  \item Se encargará del control de entrada/salida, renderizado gráfico, retroalimentación háptica, reproducción de sonido y gestión del flujo de juego.
+  \item Este software se encargará del control de entrada/salida, renderizado gráfico, retroalimentación háptica, reproducción de sonido y gestión del flujo de juego.
   \item El software interactúa directamente con componentes de hardware como pantalla, buzzer o parlante, motor de vibraciones, botones físicos, joystick analógico, acelerómetro y memoria no volátil externa.
   \item Este software está diseñado para operar de manera autónoma dentro del sistema embebido y no depende de otros sistemas externos para su funcionamiento. 
   \item La figura \ref{fig:diagCapas} presenta un diagrama de arquitectura en capas que contextualiza el software objeto de esta ERS dentro de la consola. Se distinguen:
@@ -281,14 +281,14 @@ A   & \fechaA   & Creación del documento     & \authorname     &               
     \item Gestión de partidas guardadas (selección, eliminación).
     \item Implementación de un demo de juego de simulación de vuelo en aeronave.
     \item Gestión de comunicaciones mediante UART para debug.
-    \item Gestión y almacenamiento de logs para debug.
+    % \item Gestión y almacenamiento de logs para debug.
   \end{enumerate}
   \item El software aquí especificado no brindará los servicios de:
   \begin{enumerate}
     \item Conectividad externa con otros dispositivos más allá de los requeridos para programación del firmware y/o debug.
     \item Funcionalidades multijugador.
     \item Lectura o integración de otros juegos.
-    \item Gestión o integración con periféricos diferentes a los mencionados en el documento RETRO\_GAME-RH-vA.
+    \item Gestión o integración con periféricos diferentes a los mencionados en el documento de requisitos de hardware RETRO\_GAME-RH-vA.
   \end{enumerate}
 \end{enumerate}
 
@@ -408,8 +408,6 @@ N/A.
 \label{sec:org31d2978}
 
 N/A.
-
-\newpage
 
 
 \section{Apéndices}
