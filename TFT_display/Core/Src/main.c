@@ -141,7 +141,7 @@ int main(void)
   // ---------- Comenzar escritura de memoria ----------
 //  tftSetAddressWindow(myTft, 0,0, 127,159);
   //uint16_t color = 0xF800; // Rojo RGB565
-  tftFillScreenFast(&myTft, TFT_COLOR_RED);
+  tftFillScreen(&myTft, TFT_COLOR_RED);
 
   /* USER CODE END 2 */
 
@@ -151,7 +151,7 @@ int main(void)
   {
     /* USER CODE END WHILE */
 	  // Check border
-	  tftFillScreenFast(&myTft, TFT_COLOR_BLACK);
+	  tftFillScreen(&myTft, TFT_COLOR_BLACK);
 
 	  for(int x = 0; x < TFT_WIDTH; x++) {
 		  tftDrawPixel(&myTft, x, 0, TFT_COLOR_RED);
@@ -166,47 +166,50 @@ int main(void)
 	  HAL_Delay(3000);
 
 	  // Check fonts
-	  tftFillScreenFast(&myTft, TFT_COLOR_BLACK);
+	  tftFillScreen(&myTft, TFT_COLOR_BLACK);
 	  tftWriteString(&myTft, 0, 0, "Font_7x10, red on black, lorem ipsum dolor sit amet", Font_7x10, TFT_COLOR_RED, TFT_COLOR_BLACK);
 	  tftWriteString(&myTft, 0, 3*10, "Font_11x18, green, lorem ipsum", Font_11x18, TFT_COLOR_GREEN, TFT_COLOR_BLACK);
 	  tftWriteString(&myTft, 0, 3*10+3*18, "Font_16x26", Font_16x26, TFT_COLOR_BLUE, TFT_COLOR_BLACK);
 	  HAL_Delay(2000);
 
 	  // Check colors
-	  tftFillScreenFast(&myTft, TFT_COLOR_BLACK);
+	  tftFillScreen(&myTft, TFT_COLOR_BLACK);
 	  tftWriteString(&myTft, 0, 0, "BLACK", Font_11x18, TFT_COLOR_WHITE, TFT_COLOR_BLACK);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_BLUE);
+	  tftFillScreen(&myTft, TFT_COLOR_BLUE);
 	  tftWriteString(&myTft, 0, 0, "BLUE", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_BLUE);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_RED);
+	  tftFillScreen(&myTft, TFT_COLOR_RED);
 	  tftWriteString(&myTft, 0, 0, "RED", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_RED);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_GREEN);
+	  tftFillScreen(&myTft, TFT_COLOR_GREEN);
 	  tftWriteString(&myTft, 0, 0, "GREEN", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_GREEN);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_CYAN);
+	  tftFillScreen(&myTft, TFT_COLOR_CYAN);
 	  tftWriteString(&myTft, 0, 0, "CYAN", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_CYAN);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_MAGENTA);
+	  tftFillScreen(&myTft, TFT_COLOR_MAGENTA);
 	  tftWriteString(&myTft, 0, 0, "MAGENTA", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_MAGENTA);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_YELLOW);
+	  tftFillScreen(&myTft, TFT_COLOR_YELLOW);
 	  tftWriteString(&myTft, 0, 0, "YELLOW", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_YELLOW);
 	  HAL_Delay(500);
 
-	  tftFillScreenFast(&myTft, TFT_COLOR_WHITE);
+	  tftFillScreen(&myTft, TFT_COLOR_WHITE);
 	  tftWriteString(&myTft, 0, 0, "WHITE", Font_11x18, TFT_COLOR_BLACK, TFT_COLOR_WHITE);
 	  HAL_Delay(500);
 
 	  // Display test image 128x128
-	  tftDrawImage(&myTft, 0, 0, TFT_WIDTH, TFT_WIDTH, (uint16_t*)test_img_128x128);
+	  tftDrawImage(&myTft, 0, 0, TFT_WIDTH, TFT_HEIGHT, (uint16_t*)image_128x160);
+	  HAL_Delay(5000);
+
+	  tftDrawImage(&myTft, 0, 0, TFT_WIDTH, TFT_HEIGHT, (uint16_t*)image_cockpit_desert_128x160);
 	  HAL_Delay(5000);
 
     /* USER CODE BEGIN 3 */

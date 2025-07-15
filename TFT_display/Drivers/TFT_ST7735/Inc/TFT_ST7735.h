@@ -45,8 +45,8 @@ void tftSetAddressWindow(tft_t * tft, uint8_t x0, uint8_t y0, uint8_t x1, uint8_
 void tftDrawPixel(tft_t * tft, uint8_t x, uint8_t y, uint16_t color);
 void tftWriteChar(tft_t * tft, uint8_t x, uint8_t y, char ch, FontDef font, uint16_t color, uint16_t bgcolor);
 void tftWriteString(tft_t * tft, uint16_t x, uint16_t y, const char* str, FontDef font, uint16_t color, uint16_t bgcolor);
-void tftFillRectangleFast(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
-void tftFillScreenFast(tft_t * tft, uint16_t color);
+void tftFillRectangle(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void tftFillScreen(tft_t * tft, uint16_t color);
 void tftDrawImage(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data);
 // solo para pruebas
 //void tftSendCommand(tft_t * tft, uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes);

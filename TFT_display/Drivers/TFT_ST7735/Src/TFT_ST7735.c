@@ -334,7 +334,7 @@ void tftWriteString(tft_t * tft, uint16_t x, uint16_t y, const char* str, FontDe
     tftUnselect(tft);
 }
 
-void tftFillRectangleFast(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+void tftFillRectangle(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
     // clipping
     if((x >= TFT_WIDTH) || (y >= TFT_HEIGHT)) return;
     if((x + w - 1) >= TFT_WIDTH) w = TFT_WIDTH - x;
@@ -357,8 +357,8 @@ void tftFillRectangleFast(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint1
     tftUnselect(tft);
 }
 
-void tftFillScreenFast(tft_t * tft, uint16_t color) {
-	tftFillRectangleFast(tft, 0, 0, TFT_WIDTH, TFT_HEIGHT, color);
+void tftFillScreen(tft_t * tft, uint16_t color) {
+	tftFillRectangle(tft, 0, 0, TFT_WIDTH, TFT_HEIGHT, color);
 }
 
 void tftDrawImage(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data) {
