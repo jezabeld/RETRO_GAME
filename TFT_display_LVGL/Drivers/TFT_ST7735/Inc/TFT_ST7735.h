@@ -13,6 +13,8 @@
 #include "stm32f4xx_hal_spi.h"
 #include "fonts.h"
 
+//#define USE_DMA_CB 1 // uncomment to use DMA callback function define in this library
+
 #define TFT_WIDTH 128  //
 #define TFT_HEIGHT 160 // LINES for 1.8"
 
@@ -51,5 +53,9 @@ void tftDrawImage(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, c
 // solo para pruebas
 //void tftSendCommand(tft_t * tft, uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes);
 void receiveParams(tft_t * tft, uint8_t commandByte, uint8_t *dataBytes, uint8_t numDataBytes);
+
+// DMA
+void tftDrawImageDMA(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t *data);
+void tftUnselect(tft_t * tft);
 
 #endif /* TFT_ST7735_INC_TFT_ST7735_H_ */

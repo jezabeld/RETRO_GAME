@@ -27,7 +27,7 @@
 #include "lvgl.h"          /* <- brings in lv_init(), lv_tick_inc(), etc.    */
 #include "lv_port_disp.h"  /* <- your display driver registration function   */
 #include "test_icon.h"
-
+//#include "demos/benchmark/lv_demo_benchmark.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
 
 /* USER CODE END Includes */
@@ -49,6 +49,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
 
 extern UART_HandleTypeDef huart2;
 
@@ -59,7 +60,8 @@ extern UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-//static void MX_USART2_UART_Init(void);
+static void MX_DMA_Init(void);
+static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -99,7 +101,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  //MX_USART2_UART_Init();
+  MX_DMA_Init();
+  MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   uartInit();
@@ -132,6 +135,8 @@ int main(void)
      lv_label_set_text(lab, "Hola LVGL");
 //     lv_obj_align(lab, LV_ALIGN_OUT_BOTTOM_MID, 0, 4);
      lv_obj_align_to(lab, img, LV_ALIGN_OUT_TOP_MID, 0, -4);/* 4 px encima del icono */
+
+//   lv_demo_benchmark();
 
   /* USER CODE END 2 */
 
@@ -218,7 +223,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -238,33 +243,49 @@ static void MX_SPI1_Init(void)
   * @param None
   * @retval None
   */
-//static void MX_USART2_UART_Init(void)
-//{
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
 //
-//  /* USER CODE BEGIN USART2_Init 0 */
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
 //
-//  /* USER CODE END USART2_Init 0 */
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
 //
-//  /* USER CODE BEGIN USART2_Init 1 */
-//
-//  /* USER CODE END USART2_Init 1 */
-//  huart2.Instance = USART2;
-//  huart2.Init.BaudRate = 115200;
-//  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-//  huart2.Init.StopBits = UART_STOPBITS_1;
-//  huart2.Init.Parity = UART_PARITY_NONE;
-//  huart2.Init.Mode = UART_MODE_TX_RX;
-//  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-//  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-//  if (HAL_UART_Init(&huart2) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /* USER CODE BEGIN USART2_Init 2 */
-//
-//  /* USER CODE END USART2_Init 2 */
-//
-//}
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+
+}
 
 /**
   * @brief GPIO Initialization Function

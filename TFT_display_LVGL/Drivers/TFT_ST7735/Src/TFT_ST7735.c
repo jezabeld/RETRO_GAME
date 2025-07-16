@@ -371,3 +371,33 @@ void tftDrawImage(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, c
     tftWriteData(tft, (uint8_t*)data, sizeof(uint16_t)*w*h);
     tftUnselect(tft);
 }
+
+/* ---------------------------- DMA ---------------------------------------*/
+static void tftWriteDataDMA(tft_t *tft, const uint8_t * buff, uint32_t buff_size)
+{
+    HAL_GPIO_WritePin(tft->dcPort, tft->dcPin, GPIO_PIN_SET);
+
+    /* keep CS low during the whole transfer */
+    HAL_GPIO_WritePin(tft->csPort, tft->csPin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit_DMA(tft->hSpi, (uint8_t *)buff, buff_size);
+}
+
+void tftDrawImageDMA(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t *data)
+{
+    if((x >= TFT_WIDTH) || (y >= TFT_HEIGHT)) return;
+    if((x + w - 1) >= TFT_WIDTH)   return;
+    if((y + h - 1) >= TFT_HEIGHT)  return;
+
+    tftSelect(tft);
+    tftSetAddressWindow(tft, x, y, x+w-1, y+h-1);
+    tftWriteDataDMA(tft, (const uint8_t *)data, sizeof(uint16_t)*w*h);
+    // callback de DMA tiene que levantar el CS
+}
+
+/* redefino el callbak de DMA (weak) */
+#ifdef USE_DMA_CB
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
+	tftUnselect(tft);
+}
+#endif
+

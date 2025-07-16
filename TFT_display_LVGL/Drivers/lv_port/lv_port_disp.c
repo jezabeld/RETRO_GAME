@@ -28,10 +28,12 @@ extern tft_t myTft;
  *  STATIC PROTOTYPES
  **********************/
 static void disp_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p);
+static void disp_flush_DMA(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p);
 /**********************
  *  STATIC VARIABLES
  **********************/
 static lv_disp_drv_t disp_drv;                      /*Descriptor of a display driver (global para usar con DMA)*/
+static lv_disp_t * disp_drv_ready = NULL; 			/* usado como flag de inicialización    */
 
 /**********************
  *      MACROS
@@ -73,15 +75,15 @@ void lv_port_disp_init(void)
 	 */
 
     /* Example for 1): draw buffer de LVGL (una “línea” de 20 píxeles) */
-	static lv_disp_draw_buf_t draw_buf;
-    static lv_color_t buf[MY_DISP_HOR_RES * 10];                          /*A buffer for 10 rows*/
-    lv_disp_draw_buf_init(&draw_buf, buf, NULL, MY_DISP_HOR_RES * 10);   /*Initialize the display buffer*/
+//	static lv_disp_draw_buf_t draw_buf;
+//    static lv_color_t buf[MY_DISP_HOR_RES * 10];                          /*A buffer for 10 rows*/
+//    lv_disp_draw_buf_init(&draw_buf, buf, NULL, MY_DISP_HOR_RES * 10);   /*Initialize the display buffer*/
 
-    /* Example for 2) */
-//    static lv_disp_draw_buf_t draw_buf_dsc_2;
-//    static lv_color_t buf_2_1[MY_DISP_HOR_RES * 10];                        /*A buffer for 10 rows*/
-//    static lv_color_t buf_2_2[MY_DISP_HOR_RES * 10];                        /*An other buffer for 10 rows*/
-//    lv_disp_draw_buf_init(&draw_buf_dsc_2, buf_2_1, buf_2_2, MY_DISP_HOR_RES * 10);   /*Initialize the display buffer*/
+    /* Example for 2) DMA*/
+    static lv_disp_draw_buf_t draw_buf_dsc_2;
+    static lv_color_t buf_2_1[MY_DISP_HOR_RES * 40];                        /*A buffer for 40 rows*/
+    static lv_color_t buf_2_2[MY_DISP_HOR_RES * 40];                        /*An other buffer for 40 rows*/
+    lv_disp_draw_buf_init(&draw_buf_dsc_2, buf_2_1, buf_2_2, MY_DISP_HOR_RES * 40);   /*Initialize the display buffer*/
 
     /* Example for 3) also set disp_drv.full_refresh = 1 below*/
 //    static lv_disp_draw_buf_t draw_buf_dsc_3;
@@ -101,10 +103,12 @@ void lv_port_disp_init(void)
     disp_drv.ver_res = MY_DISP_VER_RES;       /* 160  */
 
     /*Used to copy the buffer's content to the display*/
-    disp_drv.flush_cb = disp_flush;
+//    disp_drv.flush_cb = disp_flush;
+    disp_drv.flush_cb = disp_flush_DMA;
 
     /*Set a display buffer*/
-    disp_drv.draw_buf = &draw_buf;
+//    disp_drv.draw_buf = &draw_buf; // para ejemplo 1
+    disp_drv.draw_buf = &draw_buf_dsc_2;
 
     /* opcional */
      disp_drv.full_refresh = 0;   // modo por defecto PARTIAL
@@ -120,7 +124,7 @@ void lv_port_disp_init(void)
     disp_drv.user_data = &myTft;
 
     /*Finally register the driver*/
-    lv_disp_drv_register(&disp_drv);
+    disp_drv_ready = lv_disp_drv_register(&disp_drv);	/* y setea el flag de inicializacion del driver  */
 }
 
 void my_log_cb(const char * buf)
@@ -129,6 +133,14 @@ void my_log_cb(const char * buf)
     uartSendString(buf);
     uartSendString("\r\n");
 }
+
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
+	if(hspi == myTft.hSpi){
+		tftUnselect(&myTft);
+		if(disp_drv_ready) lv_disp_flush_ready(&disp_drv);
+	}
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/
@@ -151,4 +163,19 @@ static void disp_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t *
     lv_disp_flush_ready(drv);        /*avisa a LVGL que terminó*/
 }
 
+static void disp_flush_DMA(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p)
+{
+	 LV_LOG_INFO("FLUSH %d,%d %d,%d", area->x1, area->y1, area->x2, area->y2);
+    /* El ST7735 usa coordenadas de 0-127 / 0-159 */
+    uint16_t w = area->x2 - area->x1 + 1;
+    uint16_t h = area->y2 - area->y1 + 1;
+
+    tftSetAddressWindow(&myTft, area->x1, area->y1, area->x2, area->y2);
+    /* El buffer de LVGL está en formato RGB565 igual que el TFT */
+    tftDrawImageDMA(&myTft, area->x1, area->y1, w, h, (const uint16_t*)color_p);
+
+    /*IMPORTANT!!!
+         *Inform the graphics library that you are ready with the flushing*/
+//    lv_disp_flush_ready(drv);        /*esto lo hace el callback de DMA*/
+}
 
