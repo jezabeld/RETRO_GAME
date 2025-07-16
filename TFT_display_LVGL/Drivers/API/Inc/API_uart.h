@@ -36,7 +36,7 @@ HAL_StatusTypeDef uartInit();
  *
  * @return status final despues de los reintentos.
  */
-HAL_StatusTypeDef uartSendString(char * pstring);
+HAL_StatusTypeDef uartSendString(const char * pstring);
 
 /**
  * @brief Transmite un string por la UART hasta un determinado número de caracteres.
@@ -51,7 +51,7 @@ HAL_StatusTypeDef uartSendString(char * pstring);
  *
  * @return status final despues de los reintentos.
  */
-HAL_StatusTypeDef uartSendStringSize(char * pstring, uint16_t size);
+HAL_StatusTypeDef uartSendStringSize(const char * pstring, uint16_t size);
 
 /**
  * @brief Recive un string por la UART.

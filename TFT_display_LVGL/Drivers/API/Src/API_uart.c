@@ -32,7 +32,7 @@ HAL_StatusTypeDef uartInit(){
 	return HAL_OK;
 }
 
-HAL_StatusTypeDef uartSendString(char *pstring){
+HAL_StatusTypeDef uartSendString(const char *pstring){
 	assert(pstring);
 	assert_param(strlen(pstring) <= (2^sizeof(uint16_t)));
 
@@ -46,7 +46,7 @@ HAL_StatusTypeDef uartSendString(char *pstring){
 	return status;
 }
 
-HAL_StatusTypeDef uartSendStringSize(char * pstring, uint16_t size){
+HAL_StatusTypeDef uartSendStringSize(const char * pstring, uint16_t size){
 	assert(pstring);
 	assert_param(strlen(pstring) <= (2^sizeof(uint16_t)));
 	assert_param(size > 0);
