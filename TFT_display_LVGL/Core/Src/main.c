@@ -28,6 +28,7 @@
 #include "lv_port_disp.h"  /* <- your display driver registration function   */
 #include "test_icon.h"
 //#include "demos/benchmark/lv_demo_benchmark.h"
+#include "ui.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
 
 /* USER CODE END Includes */
@@ -115,26 +116,28 @@ int main(void)
 
      lv_port_disp_init();                  /* <-- registra display */
 
-     /* Change Active Screen's background color */
-     lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x003a57), LV_PART_MAIN);
-     lv_obj_set_style_text_color(lv_scr_act(), lv_color_hex(0xffffff), LV_PART_MAIN);
+     ui_init();
 
-     /* Create a spinner */
-     lv_obj_t * spinner = lv_spinner_create(lv_scr_act(), 1000, 60);
-     lv_obj_set_size(spinner, 64, 64);
-     lv_obj_align(spinner, LV_ALIGN_BOTTOM_MID, 0, 0);
-
-     /* Ahora sí, creamos la etiqueta */
-     /* icono */
-     lv_obj_t * img = lv_img_create(lv_scr_act());
-     lv_img_set_src(img, &test_icon_16x16);
-     lv_obj_center(img);                 /* centrado */
-
-     /* texto */
-     lv_obj_t * lab = lv_label_create(lv_scr_act());
-     lv_label_set_text(lab, "Hola LVGL");
-//     lv_obj_align(lab, LV_ALIGN_OUT_BOTTOM_MID, 0, 4);
-     lv_obj_align_to(lab, img, LV_ALIGN_OUT_TOP_MID, 0, -4);/* 4 px encima del icono */
+//     /* Change Active Screen's background color */
+//     lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x003a57), LV_PART_MAIN);
+//     lv_obj_set_style_text_color(lv_scr_act(), lv_color_hex(0xffffff), LV_PART_MAIN);
+//
+//     /* Create a spinner */
+//     lv_obj_t * spinner = lv_spinner_create(lv_scr_act(), 1000, 60);
+//     lv_obj_set_size(spinner, 64, 64);
+//     lv_obj_align(spinner, LV_ALIGN_BOTTOM_MID, 0, 0);
+//
+//     /* Ahora sí, creamos la etiqueta */
+//     /* icono */
+//     lv_obj_t * img = lv_img_create(lv_scr_act());
+//     lv_img_set_src(img, &test_icon_16x16);
+//     lv_obj_center(img);                 /* centrado */
+//
+//     /* texto */
+//     lv_obj_t * lab = lv_label_create(lv_scr_act());
+//     lv_label_set_text(lab, "Hola LVGL");
+////     lv_obj_align(lab, LV_ALIGN_OUT_BOTTOM_MID, 0, 4);
+//     lv_obj_align_to(lab, img, LV_ALIGN_OUT_TOP_MID, 0, -4);/* 4 px encima del icono */
 
 //   lv_demo_benchmark();
 

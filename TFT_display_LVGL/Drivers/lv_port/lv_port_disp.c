@@ -136,8 +136,8 @@ void my_log_cb(const char * buf)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 	if(hspi == myTft.hSpi){
-		tftUnselect(&myTft);
 		if(disp_drv_ready) lv_disp_flush_ready(&disp_drv);
+		tftUnselect(&myTft);
 	}
 }
 
