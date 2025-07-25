@@ -26,6 +26,7 @@
 //#include "testimg.h"
 #include "lvgl.h"          /* <- brings in lv_init(), lv_tick_inc(), etc.    */
 #include "lv_port_disp.h"  /* <- your display driver registration function   */
+#include "lv_port_indev.h" /* <- your input device driver registration function */
 #include "test_icon.h"
 //#include "demos/benchmark/lv_demo_benchmark.h"
 #include "ui.h"
@@ -125,6 +126,7 @@ int main(void)
      lv_log_register_print_cb(my_log_cb);  /* ver logs */
 
      lv_port_disp_init();                  /* <-- registra display */
+     lv_port_indev_init();                 /* <-- registra input devices */
 
      HAL_ADC_Start_DMA(&hadc1, (uint32_t *)joy_raw, 2);
 
@@ -160,6 +162,7 @@ int main(void)
   while (1)
   {
 	  lv_timer_handler();   /* procesa LVGL */
+	  lv_port_indev_clear_buttons(); /* clear button states after processing */
 
 	  uartSendString("joy X=");
 	  uartSendValue(joy_raw[0]);
@@ -459,10 +462,22 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	const char *name = "UNK";
 
 	switch (GPIO_Pin) {
-	case BTN_A_Pin:   name = "A";  break;
-	case BTN_B_Pin:   name = "B";  break;
-	case BTN_C_Pin:   name = "C"; break;
-	case BTN_D_Pin:   name = "D";    break;
+	case BTN_A_Pin:   
+		name = "A";  
+		lv_port_indev_btn_a_pressed();
+		break;
+	case BTN_B_Pin:   
+		name = "B";  
+		lv_port_indev_btn_b_pressed();
+		break;
+	case BTN_C_Pin:   
+		name = "C"; 
+		lv_port_indev_btn_c_pressed();
+		break;
+	case BTN_D_Pin:   
+		name = "D";    
+		lv_port_indev_btn_d_pressed();
+		break;
 	default: return;                     /* otro pin, ignorar */
 	}
 

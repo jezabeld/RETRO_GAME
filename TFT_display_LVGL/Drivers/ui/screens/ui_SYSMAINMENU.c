@@ -4,6 +4,7 @@
 // Project name: SquareLine_Project
 
 #include "../ui.h"
+#include "../../lv_port/lv_port_indev.h"
 
 lv_obj_t *uic_lblbtnContinuar;
 lv_obj_t *uic_btnontinuar;
@@ -14,17 +15,27 @@ lv_obj_t *ui_SYSMAINMENU = NULL;lv_obj_t *ui_Title1 = NULL;lv_obj_t *ui_btninici
 void ui_event_btniniciar( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
-if ( event_code == LV_EVENT_CLICKED) {
-      startNewGame( e );
-}
+if (event_code == LV_EVENT_KEY) {
+        uint32_t key = lv_event_get_key(e);
+        if (key == LV_KEY_ENTER) {
+            /* Button A pressed while this button is focused */
+            /* TODO: Implement startNewGame logic */
+            // startNewGame( e );
+        }
+    }
 }
 
 void ui_event_btnontinuar( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
-if ( event_code == LV_EVENT_CLICKED) {
-      continueSavedGame( e );
-}
+if (event_code == LV_EVENT_KEY) {
+        uint32_t key = lv_event_get_key(e);
+        if (key == LV_KEY_ENTER) {
+            /* Button A pressed while this button is focused */
+            /* TODO: Implement continueSavedGame logic */
+            // continueSavedGame( e );
+        }
+    }
 }
 
 // build funtions
@@ -34,15 +45,13 @@ void ui_SYSMAINMENU_screen_init(void)
 ui_SYSMAINMENU = lv_obj_create(NULL);
 lv_obj_clear_flag( ui_SYSMAINMENU, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_Title1 = lv_textarea_create(ui_SYSMAINMENU);
-lv_obj_set_width( ui_Title1, 118);
-lv_obj_set_height( ui_Title1, LV_SIZE_CONTENT);   /// 37
+ui_Title1 = lv_label_create(ui_SYSMAINMENU);
+lv_obj_set_width( ui_Title1, LV_SIZE_CONTENT);
+lv_obj_set_height( ui_Title1, LV_SIZE_CONTENT);   
 lv_obj_set_x( ui_Title1, 0 );
 lv_obj_set_y( ui_Title1, -54 );
 lv_obj_set_align( ui_Title1, LV_ALIGN_CENTER );
-lv_textarea_set_text(ui_Title1,"RETRO_GAME");
-lv_textarea_set_placeholder_text(ui_Title1,"Placeholder...");
-lv_textarea_set_one_line(ui_Title1,true);
+lv_label_set_text(ui_Title1,"RETRO_GAME");
 
 ui_btniniciar = lv_btn_create(ui_SYSMAINMENU);
 lv_obj_set_width( ui_btniniciar, 100);
@@ -50,14 +59,10 @@ lv_obj_set_height( ui_btniniciar, 27);
 lv_obj_set_x( ui_btniniciar, 1 );
 lv_obj_set_y( ui_btniniciar, -10 );
 lv_obj_set_align( ui_btniniciar, LV_ALIGN_CENTER );
-lv_obj_clear_flag( ui_btniniciar, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM | LV_OBJ_FLAG_SCROLL_CHAIN );    /// Flags
 
 ui_lblbtnIniciar = lv_label_create(ui_btniniciar);
-lv_obj_set_width( ui_lblbtnIniciar, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_lblbtnIniciar, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_lblbtnIniciar, LV_ALIGN_CENTER );
 lv_label_set_text(ui_lblbtnIniciar,"Nuevo Juego");
-lv_obj_add_state( ui_lblbtnIniciar, LV_STATE_USER_1 );     /// States
 
 ui_btnontinuar = lv_btn_create(ui_SYSMAINMENU);
 lv_obj_set_width( ui_btnontinuar, 100);
@@ -65,18 +70,22 @@ lv_obj_set_height( ui_btnontinuar, 28);
 lv_obj_set_x( ui_btnontinuar, 0 );
 lv_obj_set_y( ui_btnontinuar, 29 );
 lv_obj_set_align( ui_btnontinuar, LV_ALIGN_CENTER );
-lv_obj_add_state( ui_btnontinuar, LV_STATE_USER_2 | LV_STATE_USER_3 );     /// States
-lv_obj_add_flag( ui_btnontinuar, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-lv_obj_clear_flag( ui_btnontinuar, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
 ui_lblbtnContinuar = lv_label_create(ui_btnontinuar);
-lv_obj_set_width( ui_lblbtnContinuar, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_lblbtnContinuar, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_lblbtnContinuar, LV_ALIGN_CENTER );
 lv_label_set_text(ui_lblbtnContinuar,"Continuar");
 
 lv_obj_add_event_cb(ui_btniniciar, ui_event_btniniciar, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_btnontinuar, ui_event_btnontinuar, LV_EVENT_ALL, NULL);
+
+/* Add buttons to input group for joystick navigation */
+lv_group_t * input_group = lv_port_indev_get_group();
+if(input_group != NULL) {
+    lv_group_add_obj(input_group, ui_btniniciar);     /* Add "Nuevo Juego" button */
+    lv_group_add_obj(input_group, ui_btnontinuar);    /* Add "Continuar" button */
+    /* Note: ui_Title1 (textarea) is intentionally NOT added to the group */
+}
+
 uic_btniniciar = ui_btniniciar;
 uic_lblbtnIniciar = ui_lblbtnIniciar;
 uic_btnontinuar = ui_btnontinuar;
