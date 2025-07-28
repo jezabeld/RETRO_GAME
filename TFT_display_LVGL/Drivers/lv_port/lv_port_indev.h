@@ -22,6 +22,16 @@ extern "C" {
 /**********************
  *      TYPEDEFS
  **********************/
+typedef struct {
+    lv_obj_t ** objects;
+    uint8_t count;
+    lv_obj_t * focus_obj;
+} screen_setup_t;
+
+typedef enum {
+    SCREEN_MAIN_MENU,
+    SCREEN_PAUSED
+} screen_type_t;
 
 /**********************
  * GLOBAL PROTOTYPES

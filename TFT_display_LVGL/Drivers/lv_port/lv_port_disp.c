@@ -149,7 +149,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
  * 'lv_disp_flush_ready()' has to be called when finished. */
 static void disp_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p)
 {
-	 LV_LOG_INFO("FLUSH %d,%d %d,%d", area->x1, area->y1, area->x2, area->y2);
+//	 LV_LOG_INFO("FLUSH %d,%d %d,%d", area->x1, area->y1, area->x2, area->y2);
     /* El ST7735 usa coordenadas de 0-127 / 0-159 */
     uint16_t w = area->x2 - area->x1 + 1;
     uint16_t h = area->y2 - area->y1 + 1;
@@ -165,7 +165,7 @@ static void disp_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t *
 
 static void disp_flush_DMA(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p)
 {
-	 LV_LOG_INFO("FLUSH %d,%d %d,%d", area->x1, area->y1, area->x2, area->y2);
+//	 LV_LOG_INFO("FLUSH %d,%d %d,%d", area->x1, area->y1, area->x2, area->y2);
     /* El ST7735 usa coordenadas de 0-127 / 0-159 */
     uint16_t w = area->x2 - area->x1 + 1;
     uint16_t h = area->y2 - area->y1 + 1;

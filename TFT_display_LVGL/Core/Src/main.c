@@ -164,11 +164,11 @@ int main(void)
 	  lv_timer_handler();   /* procesa LVGL */
 	  lv_port_indev_clear_buttons(); /* clear button states after processing */
 
-	  uartSendString("joy X=");
-	  uartSendValue(joy_raw[0]);
-	  uartSendString(", joy Y=");
-	  uartSendValue(joy_raw[1]);
-	  uartSendString("\r\n");
+//	  uartSendString("joy X=");
+//	  uartSendValue(joy_raw[0]);
+//	  uartSendString(", joy Y=");
+//	  uartSendValue(joy_raw[1]);
+//	  uartSendString("\r\n");
 	      HAL_Delay(100);         /* 5 ms está bien (200 FPS máx) */
     /* USER CODE END WHILE */
 
