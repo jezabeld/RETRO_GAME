@@ -260,6 +260,24 @@ A   & \fechaA   & Creación del documento     & \authorname     &               
 \label{fig:diagCasosUso}
 \end{figure}
 
+% ────────── código PlantUML para generar la imágen en https://www.planttext.com/ ──────────
+% @startuml
+% left to right direction
+% skinparam packageStyle rectangle
+% actor Jugador
+% actor Desarrollador
+
+% package "Consola Retro" {
+%   usecase "Jugar nueva partida"  as UC_Play_New
+%   usecase "Continuar partida" as UC_Play_Old
+%   usecase "Depurar sistema" as UC_Debug
+% }
+
+% Jugador       --> UC_Play_New
+% Jugador       --> UC_Play_Old
+% Desarrollador --> UC_Debug
+% @enduml
+
 \subsection{Caso de uso 1}
 % ────────── CU-01 Jugar partida ──────────
 \UseCaseTable

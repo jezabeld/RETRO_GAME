@@ -106,9 +106,9 @@ integración, verificación y compras.
 \subsection{Referencias}
 \begin{enumerate}
   \item IEEE 1233-1998 - Guide for Developing System Requirements Specifications.
-  \item Hoja de datos STM32F446RE \url{https://www.st.com}
-  \item Hoja de datos DRV2605L \url{https://www.ti.com}
-  \item ERS RETRO\_GAME-RS-vA (Especificación de requisitos de software).
+  \item Especificación de requisitos de software: RETRO\_GAME-RS-vA.
+  \item href{https://drive.google.com/file/d/1C3vEYR8wME6EzlZVVC-gT2u86dwnoZA-/view?usp=sharing}{Plan de proyecto del trabajo práctico final} para la \textit{Carrera de Especialización en Sistemas Embebidos} (RETRO\_GAME-PP-v5). 
+  \item Especificaciones de requisitos de hardware: RETRO\_GAME-RH-vA.
 \end{enumerate}
 
 % ---------- 2 Visión general del sistema ----------
@@ -118,7 +118,7 @@ integración, verificación y compras.
 El hardware se organiza en cinco grupos:
 
 \begin{enumerate}
-  \item \textbf{Unidad de procesamiento} - placa NUCLEO-F446RE.
+  \item \textbf{Unidad de procesamiento} - placa STM32 NUCLEO-F446RE.
   \item \textbf{Alimentación} - módulo conversor 9 {\si\volt} → 5{\si\volt} /{3.3}{\si\volt} + batería.
   \item \textbf{Interfaces de entrada}
   \begin{itemize}
@@ -228,15 +228,15 @@ El hardware se organiza en cinco grupos:
 1  & STM32 NUCLEO-F446RE             & Placa de desarrollo MCU Cortex-M4 @180 MHz         & 1 & Unidad de procesamiento \\ \hline
 2  & ST7735R TFT 1.8"     & Pantalla TFT 128x160 px SPI                         & 1 & Con back-light LED \\ \hline
 3  & 25LC256                         & EEPROM SPI 256kb                     & 1 & SOIC-8 \\ \hline
-4  & DRV2605L                        & Controlador háptico I\textsuperscript{2}C           & 1 & VSLGA-10 \\ \hline
+4  & DRV2605L                        & Controlador háptico I\textsuperscript{2}C           & 1 &  \\ \hline
 5  & Motor ERM {3}{\si\volt}         & Vibrador cilíndrico {44,000} rpm               & 1 & Montaje con cinta \\ \hline
 6  & Speaker 8 Ω 1 W                 & Parlante dinámico Ø {28}{\si\mm}          & 1 &  \\ \hline %En caja acústica
 7  & LM386                            & Amplificador audio {0.7}{\si\watt}                 & 1 & SO-8 \\ \hline
 8  & GY-521 (MPU-6500)               & Módulo acelerómetro/giroscopio                     & 1 & I\textsuperscript{2}C, 3.3 V \\ \hline
 9  & Módulo DC-DC 9 V → 5/3.3 V      & Regulador step-down dual-rail                      & 1 & Salida {1.2}{\si\ampere} máx. \\ \hline
-10 & Joystick analógico KY-023       & Potenciómetro bi-eje + botón                       & 1 & Salidas analógicas \\ \hline
-11 & Tact switch (botón)             & Pulsador SMD {4}{\si\mm}                  & 4 & Entradas digitales \\ \hline
-12 & Protoboard (400 pts)            & Panel prototipado                          & 1 & Desarrollo \\ \hline
+10 & Joystick analógico KY-023       & Potenciómetro bi-eje + botón                       & 1 & \\ \hline
+11 & Tact switch (botón)             & Pulsador THT {4}{\si\mm}                  & 4 &  \\ \hline
+12 & Protoboard (400 pts)            & Panel prototipado                          & 1 &  \\ \hline
 13 & Cables jumper M-F / M-M         & Conductores dupont {20}{\si\cm}           & 30 & Conexión del prototipo \\ \hline
 \end{longtable}
 
@@ -321,22 +321,21 @@ REQ0007 (Audio) &
 Señal PWM de prueba → LM386 →
 parlante &
 Nivel audible sin distorsión
-excesiva \%. &
+excesiva. &
 Reproducir efecto “jingle”;
 usuarios confirman claridad y volumen adecuados. \\ \hline
 REQ0008 (Vibración ERM) &
-Activar patrón \#1 del DRV2605L
+Activar 2 patrones del DRV2605L
 y comprobar corriente. &
 El motor arranca en < 100 ms y
-genera 1 g (aprox.) de vibración. &
-Usuario percibe vibración al
-recibir impacto en el juego. \\ \hline
+genera patrón de vibración. &
+Usuario percibe la vibración. \\ \hline
 REQ0009 (EEPROM) &
 Escribir y leer un bloque de prueba;
 ciclar 10 veces. &
 Los datos leídos coinciden byte-a-byte
 con lo escrito; sin errores CRC. &
-Guardar partida, cortar
+Guardar datos de partida dummy, cortar
 alimentación al menos 1 h, volver a
 cargar - la partida se recupera idéntica. \\ \hline
 \end{longtable}
