@@ -130,7 +130,92 @@ int main(void)
 
      HAL_ADC_Start_DMA(&hadc1, (uint32_t *)joy_raw, 2);
 
-     ui_init();
+//     ui_init();
+
+
+     // Pruebas Juego
+     /*--------------------------------------------------------------------
+      * 1.  A dedicated screen for the in-game view
+      *------------------------------------------------------------------*/
+     static lv_obj_t  * scr_game        = NULL;
+     static lv_obj_t  * img_cockpit     = NULL;   /* foreground         */
+     static lv_obj_t  * cont_horizon    = NULL;   /* sky & mountains    */
+     static lv_obj_t  * rect_ground     = NULL;   /* moving ground strip*/
+
+     /* resources that live in FLASH (const) */
+     LV_IMG_DECLARE(cockpit128x160transp);        /* generated PNG */
+
+     static const lv_color_t sky_color   = LV_COLOR_MAKE(0x74,0x9c,0xdb);
+     static const lv_color_t ground_col  = LV_COLOR_MAKE(0x46,0x33,0x21);
+
+     /*--------------------------------------------------------------------
+      * 2.  Screen builder
+      *------------------------------------------------------------------*/
+     void game_screen_create(void)
+     {
+         /* Create the screen once */
+         scr_game = lv_obj_create(NULL);
+         lv_obj_clear_flag(scr_game, LV_OBJ_FLAG_SCROLLABLE);
+
+         /* ---------- Layer 0 : distant horizon (simple solid colour) */
+         cont_horizon = lv_obj_create(scr_game);
+         lv_obj_remove_style_all(cont_horizon);                 /* keep it light   */
+         lv_obj_set_size(cont_horizon, 128, 160);               /* full screen     */
+         lv_obj_set_style_bg_opa(cont_horizon, LV_OPA_COVER, 0);/* enable background */
+         lv_obj_set_style_bg_color(cont_horizon, sky_color, 0); /* sky background  */
+
+         /* If you later want mountains/clouds:
+            lv_obj_set_style_bg_img_src(cont_horizon, &mountains_img, 0);
+         */
+
+         /* ---------- Layer 1 : ground strip (variable height) */
+         rect_ground = lv_obj_create(cont_horizon);             /* child of sky    */
+         lv_obj_remove_style_all(rect_ground);
+         lv_obj_set_width(rect_ground, 128);
+         lv_obj_set_align(rect_ground, LV_ALIGN_BOTTOM_MID);
+         lv_obj_set_style_bg_opa(rect_ground, LV_OPA_COVER, 0); /* enable background */
+         lv_obj_set_style_bg_color(rect_ground, ground_col, 0);
+
+         /* start with 1/3 of the screen */
+         lv_obj_set_height(rect_ground, 160 / 3);
+
+         /* ---------- Layer 2 : cockpit overlay (with alpha) */
+         img_cockpit = lv_img_create(scr_game);
+         lv_img_set_src(img_cockpit, &cockpit128x160transp);
+         lv_obj_align(img_cockpit, LV_ALIGN_LEFT_MID, 0, 0);    /* fine-tune X if needed */
+         lv_obj_clear_flag(img_cockpit, LV_OBJ_FLAG_CLICKABLE); /* purely decorative     */
+
+         /* ---------- Focus group (do NOT include cockpit) */
+         lv_group_t * g = lv_port_indev_get_group();
+         if(g) {
+             lv_group_remove_all_objs(g);
+             /* add in-game UI widgets here if you have any */
+         }
+
+         lv_scr_load(scr_game);        /* make it the active screen */
+     }
+
+     /*--------------------------------------------------------------------
+      * 3.  Simple “camera” update – call every frame or timer
+      *------------------------------------------------------------------*/
+     void game_view_update(void/*-100 … +100*/)
+     {
+         /* Map pitch to a ground height: 0 % ⇒ horizon at mid-screen
+            +100 ⇒ climb (ground low) ; -100 ⇒ dive (ground high)      */
+         uint16_t h = lv_map(joy_raw[1], 0, 4095, 160, 0);  /* pixels   */
+         lv_obj_set_height(rect_ground, h);
+     }
+
+     /*--------------------------------------------------------------------
+      * 4.  Example usage from your main loop / LVGL timer
+      *------------------------------------------------------------------*/
+     /* somewhere after initializing LVGL, when you enter the game: */
+     game_screen_create();
+
+
+
+
+
 
 //     /* Change Active Screen's background color */
 //     lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x003a57), LV_PART_MAIN);
@@ -164,12 +249,15 @@ int main(void)
 	  lv_timer_handler();   /* procesa LVGL */
 	  lv_port_indev_clear_buttons(); /* clear button states after processing */
 
+	     //= read_joystick_pitch();   /*   −100 … +100  */
+	     game_view_update();
+
 //	  uartSendString("joy X=");
 //	  uartSendValue(joy_raw[0]);
 //	  uartSendString(", joy Y=");
 //	  uartSendValue(joy_raw[1]);
 //	  uartSendString("\r\n");
-	      HAL_Delay(100);         /* 5 ms está bien (200 FPS máx) */
+	      HAL_Delay(5);         /* 5 ms está bien (200 FPS máx) */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
