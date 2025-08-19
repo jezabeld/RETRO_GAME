@@ -71,14 +71,14 @@ void Error_Handler(void);
 #define BTN_D_Pin GPIO_PIN_3
 #define BTN_D_GPIO_Port GPIOC
 #define BTN_D_EXTI_IRQn EXTI3_IRQn
+#define JY_VRY_Pin GPIO_PIN_0
+#define JY_VRY_GPIO_Port GPIOA
 #define JY_VRX_Pin GPIO_PIN_1
 #define JY_VRX_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define JY_VRY_Pin GPIO_PIN_4
-#define JY_VRY_GPIO_Port GPIOA
 #define TFT_DC_Pin GPIO_PIN_6
 #define TFT_DC_GPIO_Port GPIOA
 #define TFT_RS_Pin GPIO_PIN_7

@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -24,10 +24,11 @@
 #include "API_uart.h"
 #include "TFT_ST7735.h"
 //#include "testimg.h"
-#include "lvgl.h"          /* <- brings in lv_init(), lv_tick_inc(), etc.    */
-#include "lv_port_disp.h"  /* <- your display driver registration function   */
+#include "lv_port_disp.h" /* <- your display driver registration function   */
 #include "lv_port_indev.h" /* <- your input device driver registration function */
+#include "lvgl.h" /* <- brings in lv_init(), lv_tick_inc(), etc.    */
 #include "test_icon.h"
+
 //#include "demos/benchmark/lv_demo_benchmark.h"
 #include "ui.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
@@ -66,7 +67,7 @@ extern UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_USART2_UART_Init(void);
+//static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
@@ -77,7 +78,7 @@ static void MX_ADC1_Init(void);
 /* USER CODE BEGIN 0 */
 tft_t myTft;
 
-volatile uint16_t joy_raw[2] = {0}; /* [0]=PA1 X , [1]=PA4 Y        */
+volatile uint16_t joy_raw[2] = { 0 }; /* [0]=PA1 X , [1]=PA4 Y        */
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
@@ -113,155 +114,147 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_USART2_UART_Init();
+  //MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  uartInit();
-  //spiInit(1, 2, 0, 0);
+    uartInit();
+    // spiInit(1, 2, 0, 0);
 
-  uartSendString("Initializing...\r\n");
+    uartSendString("Initializing...\r\n");
 
-  	 lv_init();
-     lv_log_register_print_cb(my_log_cb);  /* ver logs */
+    lv_init();
+    lv_log_register_print_cb(my_log_cb); /* ver logs */
 
-     lv_port_disp_init();                  /* <-- registra display */
-     lv_port_indev_init();                 /* <-- registra input devices */
+    lv_port_disp_init(); /* <-- registra display */
+    lv_port_indev_init(); /* <-- registra input devices */
 
-     HAL_ADC_Start_DMA(&hadc1, (uint32_t *)joy_raw, 2);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)joy_raw, 2);
 
-//     ui_init();
-
-
-     // Pruebas Juego
-     /*--------------------------------------------------------------------
-      * 1.  A dedicated screen for the in-game view
-      *------------------------------------------------------------------*/
-     static lv_obj_t  * scr_game        = NULL;
-     static lv_obj_t  * img_cockpit     = NULL;   /* foreground         */
-     static lv_obj_t  * cont_horizon    = NULL;   /* sky & mountains    */
-     static lv_obj_t  * rect_ground     = NULL;   /* moving ground strip*/
-
-     /* resources that live in FLASH (const) */
-     LV_IMG_DECLARE(cockpit128x160transp);        /* generated PNG */
-
-     static const lv_color_t sky_color   = LV_COLOR_MAKE(0x74,0x9c,0xdb);
-     static const lv_color_t ground_col  = LV_COLOR_MAKE(0x46,0x33,0x21);
-
-     /*--------------------------------------------------------------------
-      * 2.  Screen builder
-      *------------------------------------------------------------------*/
-     void game_screen_create(void)
-     {
-         /* Create the screen once */
-         scr_game = lv_obj_create(NULL);
-         lv_obj_clear_flag(scr_game, LV_OBJ_FLAG_SCROLLABLE);
-
-         /* ---------- Layer 0 : distant horizon (simple solid colour) */
-         cont_horizon = lv_obj_create(scr_game);
-         lv_obj_remove_style_all(cont_horizon);                 /* keep it light   */
-         lv_obj_set_size(cont_horizon, 128, 160);               /* full screen     */
-         lv_obj_set_style_bg_opa(cont_horizon, LV_OPA_COVER, 0);/* enable background */
-         lv_obj_set_style_bg_color(cont_horizon, sky_color, 0); /* sky background  */
-
-         /* If you later want mountains/clouds:
-            lv_obj_set_style_bg_img_src(cont_horizon, &mountains_img, 0);
-         */
-
-         /* ---------- Layer 1 : ground strip (variable height) */
-         rect_ground = lv_obj_create(cont_horizon);             /* child of sky    */
-         lv_obj_remove_style_all(rect_ground);
-         lv_obj_set_width(rect_ground, 128);
-         lv_obj_set_align(rect_ground, LV_ALIGN_BOTTOM_MID);
-         lv_obj_set_style_bg_opa(rect_ground, LV_OPA_COVER, 0); /* enable background */
-         lv_obj_set_style_bg_color(rect_ground, ground_col, 0);
-
-         /* start with 1/3 of the screen */
-         lv_obj_set_height(rect_ground, 160 / 3);
-
-         /* ---------- Layer 2 : cockpit overlay (with alpha) */
-         img_cockpit = lv_img_create(scr_game);
-         lv_img_set_src(img_cockpit, &cockpit128x160transp);
-         lv_obj_align(img_cockpit, LV_ALIGN_LEFT_MID, 0, 0);    /* fine-tune X if needed */
-         lv_obj_clear_flag(img_cockpit, LV_OBJ_FLAG_CLICKABLE); /* purely decorative     */
-
-         /* ---------- Focus group (do NOT include cockpit) */
-         lv_group_t * g = lv_port_indev_get_group();
-         if(g) {
-             lv_group_remove_all_objs(g);
-             /* add in-game UI widgets here if you have any */
-         }
-
-         lv_scr_load(scr_game);        /* make it the active screen */
-     }
-
-     /*--------------------------------------------------------------------
-      * 3.  Simple “camera” update – call every frame or timer
-      *------------------------------------------------------------------*/
-     void game_view_update(void/*-100 … +100*/)
-     {
-         /* Map pitch to a ground height: 0 % ⇒ horizon at mid-screen
-            +100 ⇒ climb (ground low) ; -100 ⇒ dive (ground high)      */
-         uint16_t h = lv_map(joy_raw[1], 0, 4095, 160, 0);  /* pixels   */
-         lv_obj_set_height(rect_ground, h);
-     }
-
-     /*--------------------------------------------------------------------
-      * 4.  Example usage from your main loop / LVGL timer
-      *------------------------------------------------------------------*/
-     /* somewhere after initializing LVGL, when you enter the game: */
-     game_screen_create();
+//         ui_init();
 
 
+    // Pruebas Juego
+    /*--------------------------------------------------------------------
+     * 1.  A dedicated screen for the in-game view
+     *------------------------------------------------------------------*/
+    static lv_obj_t* scr_game = NULL;
+    static lv_obj_t* img_cockpit = NULL; /* foreground         */
+    static lv_obj_t* cont_horizon = NULL; /* sky & mountains    */
+    static lv_obj_t* rect_ground = NULL; /* moving ground strip*/
 
+    /* resources that live in FLASH (const) */
+    LV_IMG_DECLARE(cockpit128x160transp); /* generated PNG */
 
+    static const lv_color_t sky_color = LV_COLOR_MAKE(0x74, 0x9c, 0xdb);
+    static const lv_color_t ground_col = LV_COLOR_MAKE(0x46, 0x33, 0x21);
 
+    /*--------------------------------------------------------------------
+     * 2.  Screen builder
+     *------------------------------------------------------------------*/
+    void game_screen_create(void) {
+        /* Create the screen once */
+        scr_game = lv_obj_create(NULL);
+        lv_obj_clear_flag(scr_game, LV_OBJ_FLAG_SCROLLABLE);
 
-//     /* Change Active Screen's background color */
-//     lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x003a57), LV_PART_MAIN);
-//     lv_obj_set_style_text_color(lv_scr_act(), lv_color_hex(0xffffff), LV_PART_MAIN);
+        /* ---------- Layer 0 : distant horizon (simple solid colour) */
+        cont_horizon = lv_obj_create(scr_game);
+        lv_obj_remove_style_all(cont_horizon); /* keep it light   */
+        lv_obj_set_size(cont_horizon, 128, 160); /* full screen     */
+        lv_obj_set_style_bg_opa(cont_horizon, LV_OPA_COVER, 0); /* enable background */
+        lv_obj_set_style_bg_color(cont_horizon, sky_color, 0); /* sky background  */
+
+        /* If you later want mountains/clouds:
+           lv_obj_set_style_bg_img_src(cont_horizon, &mountains_img, 0);
+        */
+
+        /* ---------- Layer 1 : ground strip (variable height) */
+        rect_ground = lv_obj_create(cont_horizon); /* child of sky    */
+        lv_obj_remove_style_all(rect_ground);
+        lv_obj_set_width(rect_ground, 128);
+        lv_obj_set_align(rect_ground, LV_ALIGN_BOTTOM_MID);
+        lv_obj_set_style_bg_opa(rect_ground, LV_OPA_COVER, 0); /* enable background */
+        lv_obj_set_style_bg_color(rect_ground, ground_col, 0);
+
+        /* start with 1/3 of the screen */
+        lv_obj_set_height(rect_ground, 160 / 3);
+
+        /* ---------- Layer 2 : cockpit overlay (with alpha) */
+        img_cockpit = lv_img_create(scr_game);
+        lv_img_set_src(img_cockpit, &cockpit128x160transp);
+        lv_obj_align(img_cockpit, LV_ALIGN_LEFT_MID, 0, 0); /* fine-tune X if needed */
+        lv_obj_clear_flag(img_cockpit, LV_OBJ_FLAG_CLICKABLE); /* purely decorative     */
+
+        /* ---------- Focus group (do NOT include cockpit) */
+        lv_group_t* g = lv_port_indev_get_group();
+        if (g) {
+            lv_group_remove_all_objs(g);
+            /* add in-game UI widgets here if you have any */
+        }
+
+        lv_scr_load(scr_game); /* make it the active screen */
+    }
+
+    /*--------------------------------------------------------------------
+     * 3.  Simple “camera” update – call every frame or timer
+     *------------------------------------------------------------------*/
+    void game_view_update(void /*-100 … +100*/) {
+        /* Map pitch to a ground height: 0 % ⇒ horizon at mid-screen
+           +100 ⇒ climb (ground low) ; -100 ⇒ dive (ground high)      */
+        uint16_t h = lv_map(joy_raw[1], 0, 4095, 160, 0); /* pixels   */
+        lv_obj_set_height(rect_ground, h);
+    }
+
+    /*--------------------------------------------------------------------
+     * 4.  Example usage from your main loop / LVGL timer
+     *------------------------------------------------------------------*/
+    /* somewhere after initializing LVGL, when you enter the game: */
+    game_screen_create();
+
+         /* Change Active Screen's background color */
+//         lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x003a57), LV_PART_MAIN);
+//         lv_obj_set_style_text_color(lv_scr_act(), lv_color_hex(0xffffff), LV_PART_MAIN);
 //
-//     /* Create a spinner */
-//     lv_obj_t * spinner = lv_spinner_create(lv_scr_act(), 1000, 60);
-//     lv_obj_set_size(spinner, 64, 64);
-//     lv_obj_align(spinner, LV_ALIGN_BOTTOM_MID, 0, 0);
+//         /* Create a spinner */
+//         lv_obj_t * spinner = lv_spinner_create(lv_scr_act(), 1000, 60);
+//         lv_obj_set_size(spinner, 64, 64);
+//         lv_obj_align(spinner, LV_ALIGN_BOTTOM_MID, 0, 0);
 //
-//     /* Ahora sí, creamos la etiqueta */
-//     /* icono */
-//     lv_obj_t * img = lv_img_create(lv_scr_act());
-//     lv_img_set_src(img, &test_icon_16x16);
-//     lv_obj_center(img);                 /* centrado */
+//         /* Ahora sí, creamos la etiqueta */
+//         /* icono */
+//         lv_obj_t * img = lv_img_create(lv_scr_act());
+//         lv_img_set_src(img, &test_icon_16x16);
+//         lv_obj_center(img);                 /* centrado */
 //
-//     /* texto */
-//     lv_obj_t * lab = lv_label_create(lv_scr_act());
-//     lv_label_set_text(lab, "Hola LVGL");
-////     lv_obj_align(lab, LV_ALIGN_OUT_BOTTOM_MID, 0, 4);
-//     lv_obj_align_to(lab, img, LV_ALIGN_OUT_TOP_MID, 0, -4);/* 4 px encima del icono */
+//         /* texto */
+//         lv_obj_t * lab = lv_label_create(lv_scr_act());
+//         lv_label_set_text(lab, "Hola LVGL");
+//    //     lv_obj_align(lab, LV_ALIGN_OUT_BOTTOM_MID, 0, 4);
+//         lv_obj_align_to(lab, img, LV_ALIGN_OUT_TOP_MID, 0, -4);/* 4 px encima del icono */
 
-//   lv_demo_benchmark();
+    //   lv_demo_benchmark();
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  lv_timer_handler();   /* procesa LVGL */
-	  lv_port_indev_clear_buttons(); /* clear button states after processing */
+    while (1) {
+        lv_timer_handler(); /* procesa LVGL */
+        lv_port_indev_clear_buttons(); /* clear button states after processing */
 
-	     //= read_joystick_pitch();   /*   −100 … +100  */
-	     game_view_update();
+        //= read_joystick_pitch();   /*   −100 … +100  */
+        game_view_update();
 
-//	  uartSendString("joy X=");
-//	  uartSendValue(joy_raw[0]);
-//	  uartSendString(", joy Y=");
-//	  uartSendValue(joy_raw[1]);
-//	  uartSendString("\r\n");
-	      HAL_Delay(5);         /* 5 ms está bien (200 FPS máx) */
+        //	  uartSendString("joy X=");
+        //	  uartSendValue(joy_raw[0]);
+        //	  uartSendString(", joy Y=");
+        //	  uartSendValue(joy_raw[1]);
+        //	  uartSendString("\r\n");
+        HAL_Delay(5); /* 5 ms está bien (200 FPS máx) */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+    }
   /* USER CODE END 3 */
 }
 
@@ -361,7 +354,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -420,11 +413,11 @@ static void MX_USART2_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART2_Init 0 */
-//
+//    //
   /* USER CODE END USART2_Init 0 */
 
   /* USER CODE BEGIN USART2_Init 1 */
-//
+//    //
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 115200;
@@ -439,7 +432,7 @@ static void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-//
+//    //
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -496,7 +489,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : BTN_LEFT_Pin BTN_DOWN_Pin BTN_RIGHT_Pin BTN_UP_Pin */
+  /*Configure GPIO pins : BTN_B_Pin BTN_A_Pin BTN_C_Pin BTN_D_Pin */
   GPIO_InitStruct.Pin = BTN_B_Pin|BTN_A_Pin|BTN_C_Pin|BTN_D_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -545,9 +538,8 @@ static void MX_GPIO_Init(void)
 /*-----------------------------------------------------------------------
  * Callback común de los 4 botones (PC0…PC3)
  *---------------------------------------------------------------------*/
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	const char *name = "UNK";
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    const char* name = "UNK";
 
 	switch (GPIO_Pin) {
 	case BTN_A_Pin:   
@@ -569,9 +561,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	default: return;                     /* otro pin, ignorar */
 	}
 
-	uartSendString("BTN ");
-	uartSendString(name);
-	uartSendString("\r\n");
+    uartSendString("BTN ");
+    uartSendString(name);
+    uartSendString("\r\n");
 }
 /* USER CODE END 4 */
 
@@ -582,11 +574,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+    /* User can add his own implementation to report the HAL error return state */
+    __disable_irq();
+    while (1) { }
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -601,8 +591,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    /* User can add his own implementation to report the file name and line number,
+       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
