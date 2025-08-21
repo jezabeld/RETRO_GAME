@@ -28,7 +28,7 @@
 #include "lv_port_indev.h" /* <- your input device driver registration function */
 #include "lvgl.h" /* <- brings in lv_init(), lv_tick_inc(), etc.    */
 #include "test_icon.h"
-
+#include <math.h>
 //#include "demos/benchmark/lv_demo_benchmark.h"
 #include "ui.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
@@ -54,8 +54,13 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+DAC_HandleTypeDef hdac;
+DMA_HandleTypeDef hdma_dac1;
+
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
+
+TIM_HandleTypeDef htim6;
 
 extern UART_HandleTypeDef huart2;
 
@@ -70,17 +75,42 @@ static void MX_DMA_Init(void);
 //static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
+//static void MX_DAC_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
+// reemplazo el init del DAC por estos dos:
+static void MX_DAC_Init_TrigTIM6(void);
+static void MX_DAC_Init_NoTrigger(void);
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim); // calback devil de HAL redefinido
+
+static void Wavetable_Init(void);
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// macros para upruebas audio
+//#define AUD_CASO_A
+#define AUD_CASO_B
+//#define AUD_CASO_C
+/* === Parámetros de audio === */
+#define FS_HZ        16000U     // tasa de muestreo para demos B/C
+#define BEEP_HZ      1000U      // frecuencia del beep para demo A
+#define DAC_MIN      800        // valores DAC para el beep cuadrado (A)
+#define DAC_MAX      3200
+/* Wavetable simple (seno 256 muestras, 12-bit centrado en 2048) */
+#define WT_LEN 256
+uint16_t wavetable[WT_LEN];
+/* Estado para ISR (A/B) */
+volatile uint32_t wt_idx = 0;
+volatile uint8_t  sq_toggle = 0;
+
 tft_t myTft;
 
 volatile uint16_t joy_raw[2] = { 0 }; /* [0]=PA1 X , [1]=PA4 Y        */
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* USER CODE END 0 */
 
@@ -114,12 +144,26 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  //MX_USART2_UART_Init();
+//  MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
+//  MX_DAC_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
     uartInit();
     // spiInit(1, 2, 0, 0);
+#ifdef AUD_CASO_B
+    Wavetable_Init();          // llena wavetable seno 256
+    wt_idx = 0;
+#endif
+#ifndef AUD_CASO_C // A y B
+    MX_DAC_Init_NoTrigger();   // SIN trigger
+#else
+    MX_DAC_Init_TrigTIM6();
+#endif
+
+    HAL_TIM_Base_Start(&htim6);
+    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
     uartSendString("Initializing...\r\n");
 
@@ -130,7 +174,7 @@ int main(void)
     lv_port_indev_init(); /* <-- registra input devices */
 
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*)joy_raw, 2);
-
+    HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)wavetable, WT_LEN, DAC_ALIGN_12B_R);
 //         ui_init();
 
 
@@ -233,7 +277,10 @@ int main(void)
 //         lv_obj_align_to(lab, img, LV_ALIGN_OUT_TOP_MID, 0, -4);/* 4 px encima del icono */
 
     //   lv_demo_benchmark();
-
+    HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
+      HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
+      HAL_TIM_Base_Stop(&htim6);
+      HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2048);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -250,7 +297,25 @@ int main(void)
         //	  uartSendString(", joy Y=");
         //	  uartSendValue(joy_raw[1]);
         //	  uartSendString("\r\n");
-        HAL_Delay(5); /* 5 ms está bien (200 FPS máx) */
+
+        HAL_TIM_Base_Start_IT(&htim6);
+
+        // Arrancar DAC con DMA circular
+        HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1,
+                          (uint32_t*)wavetable, WT_LEN,
+                          DAC_ALIGN_12B_R);
+
+        HAL_Delay(200);  // duración del beep
+
+        // Parar todo limpio
+        HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
+        HAL_TIM_Base_Stop_IT(&htim6);
+
+        // Centrar el DAC
+        HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1,
+                         DAC_ALIGN_12B_R, 2048);
+
+        HAL_Delay(500); /* 5 ms está bien (200 FPS máx) */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -367,6 +432,46 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief DAC Initialization Function
+  * @param None
+  * @retval None
+  */
+//static void MX_DAC_Init(void)
+//{
+//
+//  /* USER CODE BEGIN DAC_Init 0 */
+////
+//  /* USER CODE END DAC_Init 0 */
+//
+//  DAC_ChannelConfTypeDef sConfig = {0};
+//
+//  /* USER CODE BEGIN DAC_Init 1 */
+////
+//  /* USER CODE END DAC_Init 1 */
+//
+//  /** DAC Initialization
+//  */
+//  hdac.Instance = DAC;
+//  if (HAL_DAC_Init(&hdac) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** DAC channel OUT1 config
+//  */
+//  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
+//  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+//  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /* USER CODE BEGIN DAC_Init 2 */
+////
+//  /* USER CODE END DAC_Init 2 */
+//
+//}
+
+/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
@@ -405,37 +510,81 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 8;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+#ifdef AUD_CASO_A
+  htim6.Init.Period        = (1000000U/(2U * BEEP_HZ)) - 1U; // ARR para “update_hz”
+#else
+  htim6.Init.Period        = (1000000U/(FS_HZ)) - 1U;
+#endif
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+//#ifdef AUD_CASO_C
+//  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+//  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+//  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//#endif
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-//    //
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-//    //
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-//    //
-  /* USER CODE END USART2_Init 2 */
-
-}
+//static void MX_USART2_UART_Init(void)
+//{
+//
+//  /* USER CODE BEGIN USART2_Init 0 */
+//////    //
+//  /* USER CODE END USART2_Init 0 */
+//
+//  /* USER CODE BEGIN USART2_Init 1 */
+//////    //
+//  /* USER CODE END USART2_Init 1 */
+//  huart2.Instance = USART2;
+//  huart2.Init.BaudRate = 115200;
+//  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+//  huart2.Init.StopBits = UART_STOPBITS_1;
+//  huart2.Init.Parity = UART_PARITY_NONE;
+//  huart2.Init.Mode = UART_MODE_TX_RX;
+//  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+//  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+//  if (HAL_UART_Init(&huart2) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /* USER CODE BEGIN USART2_Init 2 */
+//////    //
+//  /* USER CODE END USART2_Init 2 */
+//
+//}
 
 /**
   * Enable DMA controller clock
@@ -445,8 +594,12 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
@@ -565,6 +718,67 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     uartSendString(name);
     uartSendString("\r\n");
 }
+/* ---------- ISR TIM6: HAL callback ---------- */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM6) {
+    /* CASO A: beep cuadrado (BEEP_HZ → ponemos update_hz=2*BEEP_HZ) */
+#ifdef AUD_CASO_A
+    sq_toggle ^= 1;
+    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, sq_toggle ? DAC_MAX : DAC_MIN);
+#endif
+
+    /* CASO B: wavetable por ISR (FS_HZ) */
+#ifdef AUD_CASO_B
+    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, wavetable[wt_idx++]);
+    if (wt_idx >= WT_LEN) wt_idx = 0;
+#endif
+  }
+}
+/* ---------- Utilidad: genera seno 0..4095 ---------- */
+static void Wavetable_Init(void) {
+  for (uint32_t i=0;i<WT_LEN;i++) {
+    float s = sinf(2.0f * (float)M_PI * ((float)i/(float)WT_LEN));
+    uint16_t v = (uint16_t)(2048.0f + 1800.0f * s); // margen para no recortar
+    wavetable[i] = v;
+  }
+}
+
+/* ---------- DAC sin trigger (para ISR que escribe el dato) ---------- */
+static void MX_DAC_Init_NoTrigger(void) {
+  __HAL_RCC_DAC_CLK_ENABLE();
+  hdac.Instance = DAC;
+  if (HAL_DAC_Init(&hdac) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;          // SIN TRIGGER
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/* ---------- DAC con trigger TIM6 (para DMA) ---------- */
+static void MX_DAC_Init_TrigTIM6(void) {
+  __HAL_RCC_DAC_CLK_ENABLE();
+  hdac.Instance = DAC;
+  if (HAL_DAC_Init(&hdac) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;       // CON TRIGGER
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
 /* USER CODE END 4 */
 
 /**

@@ -79,6 +79,8 @@ void Error_Handler(void);
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
+#define AUD_OUT_Pin GPIO_PIN_4
+#define AUD_OUT_GPIO_Port GPIOA
 #define TFT_DC_Pin GPIO_PIN_6
 #define TFT_DC_GPIO_Port GPIOA
 #define TFT_RS_Pin GPIO_PIN_7
