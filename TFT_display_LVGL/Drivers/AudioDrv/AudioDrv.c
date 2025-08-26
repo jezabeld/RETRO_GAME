@@ -7,8 +7,15 @@
 
 #include "AudioDrv.h"
 #include <math.h>
+#include <stdlib.h>
 
+#define DAC_MID     2048
+#define AMP_MAX     1800     // margen para no saturar 12 bits
+
+static wave_t g_wave = WF_SINE;
+static uint16_t g_amp = 1400;  // 400–700 Hz con TRI/SAW suele sonar lindo
 static float angle = 0.0f;
+float gain = 0.15f; // 30% del volumen
 static float angle_step = 0.0f;
 static float angle_change = 1000 * (2 * M_PI / SAMPLE_FREQ); // each step around the unit circle
 static uint32_t t_end_ms = 0;
@@ -22,9 +29,7 @@ static inline uint16_t env_scale_sample(uint16_t s);
 static void do_dac(volatile uint16_t *buffer);
 static void audio_start(float freq_hz, uint32_t dur_ms);
 static void audio_stop_clean(void);
-//static void MX_DAC_Init_TrigTIM6(void);
-//static void MX_DAC_Init_NoTrigger(void);
-//static void Wavetable_Init(void);
+static inline float wave_sample(float angle, wave_t wf);
 
 extern DAC_HandleTypeDef hdac;
 extern TIM_HandleTypeDef htim6;
@@ -47,34 +52,75 @@ static inline uint16_t env_scale_sample(uint16_t s)
     return (uint16_t)(y < 0 ? 0 : (y > 4095 ? 4095 : y));
 }
 
-static void fill_block(volatile uint16_t *buf, uint32_t n)
+static void fill_block(volatile uint16_t *buf, uint32_t n, wave_t wf, uint16_t amp)
 {
+    if (amp > AMP_MAX) amp = AMP_MAX;
+
     for (uint32_t i = 0; i < n; i++) {
-        // seno 12 bits centrado
-        float s = cosf(angle);                         // o sinf, da igual
-        uint16_t v = (uint16_t)(DAC_OUT_MID + 1800.0f * s);
-        if (fade_left) v = env_scale_sample(v);
-        buf[i] = v;
+        float s = wave_sample(angle, wf);                // −1..+1
+        int32_t v = DAC_MID + (int32_t)((float)amp * gain * s); // centro en 2048
+        if (v < 0) v = 0; else if (v > 4095) v = 4095;
+
+        uint16_t out = (uint16_t)v;
+        if (fade_left) out = env_scale_sample(out);
+        buf[i] = out;
 
         angle += angle_step;
         if (angle >= 2.0f * (float)M_PI) angle -= 2.0f * (float)M_PI;
     }
+
     if (fade_left) {
-        // Consumí 'n' muestras de fade, sin ir por debajo de cero
         fade_left = (fade_left > n) ? (fade_left - n) : 0;
     }
 }
-//
+
+
+static inline float wave_sample(float angle, wave_t wf)
+{
+    switch (wf) {
+    case WF_SINE: {
+        // seno “redondo”
+        return sinf(angle);  // −1..+1
+    }
+    case WF_SQUARE: {
+        // pulso 50% (mucho “bite”)
+        return (sinf(angle) >= 0.0f) ? 1.0f : -1.0f;
+    }
+    case WF_SAW: {
+        // diente de sierra (brillante)
+        float phase = angle * (1.0f / (2.0f * (float)M_PI)); // 0..~1
+        phase -= (int)phase;                                  // wrap [0,1)
+        return (2.0f * phase) - 1.0f;                         // −1..+1
+    }
+    case WF_TRI: {
+        // triángulo (más amable que square/saw)
+        float phase = angle * (1.0f / (2.0f * (float)M_PI));  // 0..~1
+        phase -= (int)phase;
+        float tri = (phase < 0.5f) ? (4.0f*phase - 1.0f)      // sube -1→+1
+                                   : (-4.0f*phase + 3.0f);    // baja +1→-1
+        return tri; // −1..+1
+    }
+    case WF_NOISE: {
+        // ruido blanco simple (ojo: requiere <stdlib.h>)
+        // rand() / RAND_MAX -> 0..1  => escalo a −1..+1
+        float r = (float)rand() / (float)RAND_MAX;
+        return (2.0f * r) - 1.0f;
+    }
+    default:
+        return 0.0f;
+    }
+}
+
+
 void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac_)
 {
     if (!audio_on) return;
-    fill_block(&dac_dma_buffer[0], DMA_BUFFER_SIZE);
+    fill_block(&dac_dma_buffer[0], DMA_BUFFER_SIZE, g_wave, g_amp);
 }
-
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac_)
 {
     if (!audio_on) return;
-    fill_block(&dac_dma_buffer[DMA_BUFFER_SIZE], DMA_BUFFER_SIZE);
+    fill_block(&dac_dma_buffer[DMA_BUFFER_SIZE], DMA_BUFFER_SIZE, g_wave, g_amp);
 }
 
 static void audio_start(float freq_hz, uint32_t dur_ms)
@@ -125,25 +171,20 @@ void audio_task(void)
     }
 }
 
-void Audio_Beep(float freq_hz, uint32_t dur_ms)
-{
-    // si ya estaba sonando, cortá limpio primero
-    if (audio_on) { stop_pending = 1; fade_left = FADE_SAMPLES; }
-    audio_start(freq_hz, dur_ms);
-}
+//void Audio_Beep(float freq_hz, uint32_t dur_ms)
+//{
+//    // si ya estaba sonando, cortá limpio primero
+//    if (audio_on) { stop_pending = 1; fade_left = FADE_SAMPLES; }
+//    audio_start(freq_hz, dur_ms);
+//}
 
-// static void do_dac(volatile uint16_t *buffer) {
-// 	for(int i=0; i < DMA_BUFFER_SIZE; i++){
-// 		buffer[i] = DAC_OUT_MID - ((DAC_OUT_MID * cos(angle)));
-// 		angle += angle_change;
-// 		if(angle >= (2*M_PI)){ // si me paso vuelvo entre o-2pi
-// 			angle -= (2*M_PI);
-// 		}
-// 	}
-// }
-// void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
-// 	do_dac(&dac_dma_buffer[DMA_BUFFER_SIZE]);
-// }
-// void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
-// 	do_dac(&dac_dma_buffer[0]);
-// }
+void Audio_BeepEx(float freq_hz, uint32_t dur_ms, wave_t wf, uint16_t amp)
+{
+    // si ya estaba sonando, pedí fade-out
+    if (audio_on) { stop_pending = 1; fade_left = FADE_SAMPLES; }
+
+    g_wave = wf;
+    g_amp  = (amp > AMP_MAX) ? AMP_MAX : amp;
+
+    audio_start(freq_hz, dur_ms); // tu start con DMA + TIM6
+}

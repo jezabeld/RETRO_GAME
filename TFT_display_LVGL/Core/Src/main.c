@@ -31,8 +31,8 @@
 
 //#include "demos/benchmark/lv_demo_benchmark.h"
 #include "ui.h"
-
-#include "AudioDrv.h"
+#include "play_sound.h"
+//#include "AudioDrv.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
 
 /* USER CODE END Includes */
@@ -74,7 +74,7 @@ extern UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_USART2_UART_Init(void);
+//static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_DAC_Init(void);
@@ -93,20 +93,87 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 
 // macros para upruebas audio
-//#define AUD_CASO_A
-//#define AUD_CASO_B
-//#define AUD_CASO_C
-/* === Parámetros de audio === */
-//#define FS_HZ        16000U     // tasa de muestreo para demos B/C
-//#define BEEP_HZ      1000U      // frecuencia del beep para demo A
-//#define DAC_MIN      800        // valores DAC para el beep cuadrado (A)
-//#define DAC_MAX      3200
-///* Wavetable simple (seno 256 muestras, 12-bit centrado en 2048) */
-//#define WT_LEN 256
-//uint16_t wavetable[WT_LEN];
-///* Estado para ISR (A/B) */
-//volatile uint32_t wt_idx = 0;
-//volatile uint8_t  sq_toggle = 0;
+typedef void (*beep_fn_t)(float, uint32_t);
+// atajos prácticos
+#define Audio_Beep(f,d)        Audio_BeepEx((f),(d), WF_SINE, 1500)
+#define Audio_BeepTri(f,d)     Audio_BeepEx((f),(d), WF_TRI,  1500)
+#define Audio_BeepSaw(f,d)     Audio_BeepEx((f),(d), WF_SAW,  1400)
+#define Audio_BeepSquare(f,d)  Audio_BeepEx((f),(d), WF_SQUARE,1200)
+#define Audio_BeepNoise(d)     Audio_BeepEx(0.0f,(d),WF_NOISE, 900) // freq no aplica
+
+/* --- Estructura para cada beep --- */
+//typedef struct {
+//    float freq;
+//    uint32_t dur_ms;
+//    wave_t wf;
+//    uint16_t amp;
+//} beep_entry_t;
+//
+///* --- Tabla de beeps predefinidos --- */
+//beep_entry_t beep_table[] = {
+//	    {440.0f, 150, WF_SINE,   1500},  // beep base LA4 (tono afinación)
+//	    {523.0f, 120, WF_SINE,   1400},  // DO5, más brillante
+//	    {330.0f, 200, WF_TRI,    1500},  // MI4 triángulo, más amable
+//	    {660.0f, 100, WF_SQUARE, 1200},  // ALTA square, sonido tipo "alerta"
+//	    {550.0f, 80,  WF_SAW,    1400},  // SAW más áspero
+//	    {200.0f, 250, WF_SINE,   1600},  // tono grave (error / warning) ***********************
+//	    {800.0f, 80,  WF_TRI,    1200},  // corto y agudo (click de UI)
+//	    {1000.0f,60,  WF_SQUARE, 1000},  // muy corto, “blip”
+//	    {440.0f, 300, WF_NOISE,  900},   // burst de ruido (explosión pequeña)
+//	    {300.0f, 150, WF_TRI,    1500},  // confirmación suave
+//	    {700.0f, 120, WF_SAW,    1500},  // “bite” agresivo
+//	    {880.0f, 100, WF_SINE,   1500},  // LA5, más agudo y limpio
+//};
+
+void Play_Song(const beep_entry_t *song, uint32_t length) {
+    for (uint32_t i=0; i<length; i++) {
+        if (song[i].freq > 0) {
+            Audio_BeepEx(song[i].freq, song[i].dur_ms, song[i].wf, song[i].amp);
+        }
+        HAL_Delay(song[i].dur_ms * 1.30f); // 30% extra como pausa entre notas
+    }
+}
+
+/* Tamaño de la tabla */
+//#define BEEP_TABLE_LEN (sizeof(beep_table)/sizeof(beep_table[0]))
+//
+//uint8_t beep_index = 0;
+
+//beep_entry_t mario_theme[] = {
+//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500}, // corchea
+//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500},
+//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500},
+//    {NOTE_C5, Q_NOTE/2, WF_SQUARE, 1500},
+//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500},
+//    {NOTE_G5, Q_NOTE,   WF_SQUARE, 1500}, // negra
+//    {NOTE_G4, Q_NOTE,   WF_SQUARE, 1500}, // negra
+//    {0,       Q_NOTE/2, WF_SINE,   0   }, // silencio
+//};
+beep_entry_t mario_theme[] = {
+    {NOTE_E5, 150, WF_SQUARE, 1500},
+    {NOTE_E5, 150, WF_SQUARE, 1500},
+    {NOTE_E5, 150, WF_SQUARE, 1500},
+    {NOTE_C5, 150, WF_SQUARE, 1500},
+    {NOTE_E5, 150, WF_SQUARE, 1500},
+    {NOTE_G5, 300, WF_SQUARE, 1500},
+    {NOTE_G4, 300, WF_SQUARE, 1500},
+    {0,       150, WF_SINE,   0   },   // silencio
+//
+//    {NOTE_C5, 200, WF_SQUARE, 1500},
+//    {NOTE_G4, 200, WF_SQUARE, 1500},
+//    {NOTE_E4, 200, WF_SQUARE, 1500},
+//    {NOTE_A4, 200, WF_SQUARE, 1500},
+//    {NOTE_B4, 200, WF_SQUARE, 1500},
+//    {NOTE_AS4,200, WF_SQUARE, 1500},
+//    {NOTE_A4, 200, WF_SQUARE, 1500},
+//    {NOTE_G4, 150, WF_SQUARE, 1500},
+//    {NOTE_E5, 150, WF_SQUARE, 1500},
+//    {NOTE_G5, 150, WF_SQUARE, 1500},
+//    {NOTE_A5, 300, WF_SQUARE, 1500},
+//    // … y así seguís con la partitura completa
+};
+#define MARIO_LEN (sizeof(mario_theme)/sizeof(mario_theme[0]))
+
 
 tft_t myTft;
 
@@ -157,8 +224,9 @@ int main(void)
     uartSendString("Initializing...\r\n");
 
     lv_init();
+#if LV_USE_LOG
     lv_log_register_print_cb(my_log_cb); /* ver logs */
-
+#endif
     lv_port_disp_init(); /* <-- registra display */
     lv_port_indev_init(); /* <-- registra input devices */
 
@@ -287,12 +355,20 @@ int main(void)
         //	  uartSendValue(joy_raw[1]);
         //	  uartSendString("\r\n");
         audio_task();          // <<--- acá
+        Play_Song_Update();
 
         if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
-                // OJO: el USER button de la NUCLEO es activo-bajo
-                Audio_Beep(440.0f, 80);   // 1 kHz, 150 ms
-                HAL_Delay(100);             // pequeño delay para que no dispare varias veces seguidas
-            }
+//            beep_entry_t *b = &beep_table[beep_index];
+//            Audio_BeepEx(b->freq, b->dur_ms, b->wf, b->amp);
+//            uartSendString("index: ");
+//		  uartSendValue(beep_index);
+//		  uartSendString("\r\n");
+//            beep_index++;
+//            if (beep_index >= BEEP_TABLE_LEN) beep_index = 0;  // volver a inicio
+//
+//            HAL_Delay(100);  // anti-rebote simple
+        	Play_Song_Start(mario_theme, MARIO_LEN);
+        }
 
         HAL_Delay(5); /* 5 ms está bien (200 FPS máx) */
     /* USER CODE END WHILE */
