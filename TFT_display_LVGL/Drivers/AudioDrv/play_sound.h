@@ -7,7 +7,7 @@
 
 #ifndef AUDIODRV_PLAY_SOUND_H_
 #define AUDIODRV_PLAY_SOUND_H_
-
+#ifdef AUD_DAC
 #include "AudioDrv.h"
 
 #define NOTE_C4   262
@@ -52,7 +52,7 @@ void Play_Song_Start(const beep_entry_t *song, uint32_t length);
 void Play_Song_Update(void);
 
 
-
+#endif
 
 
 #endif /* AUDIODRV_PLAY_SOUND_H_ */

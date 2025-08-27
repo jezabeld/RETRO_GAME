@@ -31,8 +31,9 @@
 
 //#include "demos/benchmark/lv_demo_benchmark.h"
 #include "ui.h"
-#include "play_sound.h"
+//#include "play_sound.h"
 //#include "AudioDrv.h"
+#include "audioPwm.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
 
 /* USER CODE END Includes */
@@ -56,13 +57,12 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
-DAC_HandleTypeDef hdac;
-DMA_HandleTypeDef hdma_dac1;
-
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim6;
+DMA_HandleTypeDef hdma_tim6_up;
 
 extern UART_HandleTypeDef huart2;
 
@@ -77,8 +77,8 @@ static void MX_DMA_Init(void);
 //static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_DAC_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 // reemplazo el init del DAC por estos dos:
 
@@ -91,88 +91,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-// macros para upruebas audio
-typedef void (*beep_fn_t)(float, uint32_t);
-// atajos prácticos
-#define Audio_Beep(f,d)        Audio_BeepEx((f),(d), WF_SINE, 1500)
-#define Audio_BeepTri(f,d)     Audio_BeepEx((f),(d), WF_TRI,  1500)
-#define Audio_BeepSaw(f,d)     Audio_BeepEx((f),(d), WF_SAW,  1400)
-#define Audio_BeepSquare(f,d)  Audio_BeepEx((f),(d), WF_SQUARE,1200)
-#define Audio_BeepNoise(d)     Audio_BeepEx(0.0f,(d),WF_NOISE, 900) // freq no aplica
-
-/* --- Estructura para cada beep --- */
-//typedef struct {
-//    float freq;
-//    uint32_t dur_ms;
-//    wave_t wf;
-//    uint16_t amp;
-//} beep_entry_t;
-//
-///* --- Tabla de beeps predefinidos --- */
-//beep_entry_t beep_table[] = {
-//	    {440.0f, 150, WF_SINE,   1500},  // beep base LA4 (tono afinación)
-//	    {523.0f, 120, WF_SINE,   1400},  // DO5, más brillante
-//	    {330.0f, 200, WF_TRI,    1500},  // MI4 triángulo, más amable
-//	    {660.0f, 100, WF_SQUARE, 1200},  // ALTA square, sonido tipo "alerta"
-//	    {550.0f, 80,  WF_SAW,    1400},  // SAW más áspero
-//	    {200.0f, 250, WF_SINE,   1600},  // tono grave (error / warning) ***********************
-//	    {800.0f, 80,  WF_TRI,    1200},  // corto y agudo (click de UI)
-//	    {1000.0f,60,  WF_SQUARE, 1000},  // muy corto, “blip”
-//	    {440.0f, 300, WF_NOISE,  900},   // burst de ruido (explosión pequeña)
-//	    {300.0f, 150, WF_TRI,    1500},  // confirmación suave
-//	    {700.0f, 120, WF_SAW,    1500},  // “bite” agresivo
-//	    {880.0f, 100, WF_SINE,   1500},  // LA5, más agudo y limpio
-//};
-
-void Play_Song(const beep_entry_t *song, uint32_t length) {
-    for (uint32_t i=0; i<length; i++) {
-        if (song[i].freq > 0) {
-            Audio_BeepEx(song[i].freq, song[i].dur_ms, song[i].wf, song[i].amp);
-        }
-        HAL_Delay(song[i].dur_ms * 1.30f); // 30% extra como pausa entre notas
-    }
-}
-
-/* Tamaño de la tabla */
-//#define BEEP_TABLE_LEN (sizeof(beep_table)/sizeof(beep_table[0]))
-//
-//uint8_t beep_index = 0;
-
-//beep_entry_t mario_theme[] = {
-//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500}, // corchea
-//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500},
-//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500},
-//    {NOTE_C5, Q_NOTE/2, WF_SQUARE, 1500},
-//    {NOTE_E5, Q_NOTE/2, WF_SQUARE, 1500},
-//    {NOTE_G5, Q_NOTE,   WF_SQUARE, 1500}, // negra
-//    {NOTE_G4, Q_NOTE,   WF_SQUARE, 1500}, // negra
-//    {0,       Q_NOTE/2, WF_SINE,   0   }, // silencio
-//};
-beep_entry_t mario_theme[] = {
-    {NOTE_E5, 150, WF_SQUARE, 1500},
-    {NOTE_E5, 150, WF_SQUARE, 1500},
-    {NOTE_E5, 150, WF_SQUARE, 1500},
-    {NOTE_C5, 150, WF_SQUARE, 1500},
-    {NOTE_E5, 150, WF_SQUARE, 1500},
-    {NOTE_G5, 300, WF_SQUARE, 1500},
-    {NOTE_G4, 300, WF_SQUARE, 1500},
-    {0,       150, WF_SINE,   0   },   // silencio
-//
-//    {NOTE_C5, 200, WF_SQUARE, 1500},
-//    {NOTE_G4, 200, WF_SQUARE, 1500},
-//    {NOTE_E4, 200, WF_SQUARE, 1500},
-//    {NOTE_A4, 200, WF_SQUARE, 1500},
-//    {NOTE_B4, 200, WF_SQUARE, 1500},
-//    {NOTE_AS4,200, WF_SQUARE, 1500},
-//    {NOTE_A4, 200, WF_SQUARE, 1500},
-//    {NOTE_G4, 150, WF_SQUARE, 1500},
-//    {NOTE_E5, 150, WF_SQUARE, 1500},
-//    {NOTE_G5, 150, WF_SQUARE, 1500},
-//    {NOTE_A5, 300, WF_SQUARE, 1500},
-//    // … y así seguís con la partitura completa
-};
-#define MARIO_LEN (sizeof(mario_theme)/sizeof(mario_theme[0]))
 
 
 tft_t myTft;
@@ -214,8 +132,8 @@ int main(void)
 //  MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
-  MX_DAC_Init();
   MX_TIM6_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
     uartInit();
     // spiInit(1, 2, 0, 0);
@@ -231,7 +149,6 @@ int main(void)
     lv_port_indev_init(); /* <-- registra input devices */
 
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*)joy_raw, 2);
-//    audioInit();
 //         ui_init();
 
 
@@ -342,6 +259,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+    uint8_t sonando=0;
     while (1) {
         lv_timer_handler(); /* procesa LVGL */
         lv_port_indev_clear_buttons(); /* clear button states after processing */
@@ -354,20 +272,18 @@ int main(void)
         //	  uartSendString(", joy Y=");
         //	  uartSendValue(joy_raw[1]);
         //	  uartSendString("\r\n");
-        audio_task();          // <<--- acá
-        Play_Song_Update();
+
 
         if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
-//            beep_entry_t *b = &beep_table[beep_index];
-//            Audio_BeepEx(b->freq, b->dur_ms, b->wf, b->amp);
-//            uartSendString("index: ");
-//		  uartSendValue(beep_index);
-//		  uartSendString("\r\n");
-//            beep_index++;
-//            if (beep_index >= BEEP_TABLE_LEN) beep_index = 0;  // volver a inicio
-//
-//            HAL_Delay(100);  // anti-rebote simple
-        	Play_Song_Start(mario_theme, MARIO_LEN);
+        	if(!sonando){
+				// fs = 16000 Hz, tono = 1 kHz
+				AudioPWM_Start(1000.0f, 16000);
+				sonando = 1;
+        	} else {
+        		// ... cuando quieras parar:
+        		AudioPWM_Stop();
+        		sonando = 0;
+        	}
         }
 
         HAL_Delay(5); /* 5 ms está bien (200 FPS máx) */
@@ -487,46 +403,6 @@ static void MX_ADC1_Init(void)
 }
 
 /**
-  * @brief DAC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_DAC_Init(void)
-{
-
-  /* USER CODE BEGIN DAC_Init 0 */
-////
-  /* USER CODE END DAC_Init 0 */
-
-  DAC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN DAC_Init 1 */
-////
-  /* USER CODE END DAC_Init 1 */
-
-  /** DAC Initialization
-  */
-  hdac.Instance = DAC;
-  if (HAL_DAC_Init(&hdac) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** DAC channel OUT1 config
-  */
-  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
-  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
-  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN DAC_Init 2 */
-////
-  /* USER CODE END DAC_Init 2 */
-
-}
-
-/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
@@ -561,6 +437,55 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 840 - 1;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = (840-1)/2;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
 
 }
 
@@ -611,11 +536,11 @@ static void MX_TIM6_Init(void)
 //{
 //
 //  /* USER CODE BEGIN USART2_Init 0 */
-////////    //
+////////////    //
 //  /* USER CODE END USART2_Init 0 */
 //
 //  /* USER CODE BEGIN USART2_Init 1 */
-////////    //
+////////////    //
 //  /* USER CODE END USART2_Init 1 */
 //  huart2.Instance = USART2;
 //  huart2.Init.BaudRate = 115200;
@@ -630,7 +555,7 @@ static void MX_TIM6_Init(void)
 //    Error_Handler();
 //  }
 //  /* USER CODE BEGIN USART2_Init 2 */
-////////    //
+////////////    //
 //  /* USER CODE END USART2_Init 2 */
 //
 //}
@@ -646,9 +571,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);

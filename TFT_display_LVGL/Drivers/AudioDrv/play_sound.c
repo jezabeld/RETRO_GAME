@@ -4,7 +4,7 @@
  *  Created on: Aug 26, 2025
  *      Author: jez
  */
-
+#ifdef AUD_DAC
 #include <play_sound.h>
 
 static const beep_entry_t *g_song = NULL;
@@ -43,3 +43,4 @@ void Play_Song_Update(void) {
         g_note_end_tick = now + (uint32_t)(n->dur_ms * 1.3f);
     }
 }
+#endif

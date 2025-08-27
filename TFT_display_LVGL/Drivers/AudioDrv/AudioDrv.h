@@ -8,6 +8,7 @@
 #ifndef AUDIODRV_AUDIODRV_H_
 #define AUDIODRV_AUDIODRV_H_
 
+#ifdef AUD_DAC
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 
@@ -39,4 +40,5 @@ void Audio_BeepEx(float freq_hz, uint32_t dur_ms, wave_t wf, uint16_t amp);
 void audioInit();
 void audio_task(void);
 
+#endif
 #endif /* AUDIODRV_AUDIODRV_H_ */

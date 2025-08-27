@@ -4,7 +4,7 @@
  *  Created on: Aug 25, 2025
  *      Author: jez
  */
-
+#ifdef AUD_DAC
 #include "AudioDrv.h"
 #include <math.h>
 #include <stdlib.h>
@@ -188,3 +188,5 @@ void Audio_BeepEx(float freq_hz, uint32_t dur_ms, wave_t wf, uint16_t amp)
 
     audio_start(freq_hz, dur_ms); // tu start con DMA + TIM6
 }
+
+#endif
