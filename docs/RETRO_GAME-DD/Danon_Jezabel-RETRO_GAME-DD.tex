@@ -1,0 +1,172 @@
+% Created 2025-07-09
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt,a4paper]{article}
+
+% ──────────────────────── Paquetes básicos ────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english, spanish]{babel}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath, amssymb}
+\usepackage{textcomp}
+\usepackage{capt-of}
+\usepackage{tabularx}
+\usepackage{lastpage}
+\usepackage{enumitem}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage[left=2.00cm,right=2.50cm,top=2.50cm,bottom=2.50cm]{geometry}
+\usepackage{hyperref}
+
+% ──────────────────────── Comandos útiles ────────────────────────
+\newcommand*{\autor}[1]{\def\authorname{#1}}
+\newcommand*{\titulo}[1]{\def\@title{#1}\def\ttitle{#1}}
+\newcommand{\versionActual}{A}
+\newcommand{\fechaA}{09/07/2025}
+\newcommand{\docCode}{\normalsize RETRO\_GAME-DD versión \versionActual}
+\newcommand{\fechaActual}{\fechaA}
+
+\titulo{Videojuego portátil inspirado en consolas retro}      % <─ Cambia si quieres
+\autor{Lic. Jezabel Danon}
+
+% ──────────────────────── Encabezado / pie ────────────────────────
+\usepackage{fancyhdr}
+\fancyhf{}
+\pagestyle{fancy}
+\lhead{\includegraphics[width=3.5cm]{./Figuras/logoFIUBA.pdf}}
+\rhead{\normalsize\textbf{\@title}\\Documento de diseño de software\\\docCode}
+\setlength{\headheight}{42pt}
+\setlength{\footskip}{25pt}
+\cfoot{\normalsize Página \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% ──────────────────────── Hyperref ────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  pdftitle={\@title},
+  pdfauthor={\authorname},
+  pdflang={es}
+}
+
+% ──────────────────────── Documento ────────────────────────
+\begin{document}
+
+% ---------- Portada ----------
+\begin{titlepage}
+  \centering
+  \includegraphics[width=.7\textwidth]{Figuras/logoFIUBA.pdf}\par
+  \vspace{1cm}
+  {\Huge\textbf{\ttitle}}\par
+  \vspace{1.5cm}
+  {\Large\itshape Documento de diseño de software (SDD)\par}
+  \vspace{3cm}
+  \flushleft
+  {\normalsize Autor:}\par
+  {\Large \authorname\ (jezabel.danon@gmail.com)}\par
+  \vspace{1.5cm}
+  {\scshape\LARGE \fechaActual}\par
+  {\scshape\LARGE Versión \versionActual}\par
+  \vfill
+  \centering
+  \textit{Basado en el estándar IEEE 1016-2017 e integrado con la ERS RETRO\_GAME-RS.}
+\end{titlepage}
+
+\clearpage
+\tableofcontents
+\clearpage
+
+% ---------- 1 Introducción ----------
+\section{Introducción}
+\subsection{Propósito}
+Breve descripción de por qué existe este documento, a quién va dirigido y cómo se relaciona con la ERS.
+
+\subsection{Ámbito}
+Alcance del diseño: qué módulos, capas o servicios cubre; qué queda fuera.
+
+\subsection{Definiciones y acrónimos}
+Si algún término de diseño no aparece ya en la ERS, defínelo aquí.
+
+% ---------- 2 Visión general de la arquitectura ----------
+\section{Visión general de la arquitectura}
+\subsection{Vista en capas}
+\begin{itemize}
+  \item Reproduce (o amplía) el diagrama \textit{SW\_layers.pdf}, destacando los límites entre
+        Bootloader, Drivers, Lógica del sistema y Lógica del juego.
+  \item Explica brevemente las dependencias entre capas.
+\end{itemize}
+
+\subsection{Estilos y patrones arquitectónicos}
+Enumera decisiones globales—RTOS cooperativo, uso de colas, pub/sub, etc.
+
+% ---------- 3 Vista de módulos / servicios ----------
+\section{Descripción de módulos y servicios}
+Para cada servicio descrito en el glosario:
+\subsection{Boot Manager}
+\begin{itemize}
+  \item \textbf{Responsabilidad:} \ldots
+  \item \textbf{Interfaces:} API C (\texttt{void Boot\_Init(void);})\ldots
+  \item \textbf{Datos persistentes:} —
+  \item \textbf{Errores y manejo:} CRC fallido → LED parpadea\ldots
+\end{itemize}
+
+\subsection{UI Controller}
+\ldots (repite la misma plantilla para cada servicio: Resource Loader, Event Dispatcher, Save Manager, FSM-Juego, etc.)
+
+% ---------- 4 Modelos dinámicos ----------
+\section{Modelos dinámicos}
+\subsection{Diagrama de secuencia 1 - Encendido hasta menú}
+% \begin{center}
+% %   \includegraphics[width=.9\linewidth]{Figuras/seq_boot_to_menu.pdf}
+% \end{center}
+Descripción narrativa de cada paso.
+
+\subsection{Diagrama de secuencia 2 - Pausa y opciones}
+% \begin{center}
+%   \includegraphics[width=.9\linewidth]{Figuras/seq_pause_menu.pdf}
+% \end{center}
+
+% ---------- 5 Asignación a tareas y concurrencia ----------
+\section{Concurrencia y asignación a tareas}
+\subsection{Mapa de tareas FreeRTOS}
+Tabla con tareas, prioridad, stack, frecuencia.
+
+\subsection{Sincronización y comunicación}
+Colas, semáforos, exclusiones mutuas usadas.
+
+% ---------- 6 Aspectos de datos ----------
+\section{Modelo de datos}
+\subsection{Estructuras persistentes}
+Formato del snapshot de partida, layout EEPROM, checksum.
+
+\subsection{Estructuras en RAM}
+Buffers de audio, frame buffer, colas de eventos.
+
+% ---------- 7 Manejo de errores y registro (logging) ----------
+\section{Manejo de errores y logging}
+Política de códigos de error, niveles de log, rutas de fallos críticos.
+
+% ---------- 8 Requisitos de diseño no funcionales ----------
+\section{Requisitos de diseño no funcionales}
+Rendimiento (FPS), footprint de Flash/RAM, respuesta a interrupciones, requisitos de seguridad.
+
+% ---------- 9 Referencias ----------
+\section{Referencias}
+\bibliographystyle{plain}
+% \bibliography{biblio_design}
+
+% ---------- Apéndices ----------
+\appendix
+\section{Apéndice A – Glosario completo de servicios}
+Tabla resumen: Nombre, capa, descripción de 1 línea.
+
+\section{Apéndice B – Diagramas adicionales}
+Coloca aquí otros diagramas UML o listas de mensajes.
+
+\end{document}
