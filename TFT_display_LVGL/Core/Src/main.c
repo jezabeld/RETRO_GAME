@@ -32,8 +32,8 @@
 //#include "demos/benchmark/lv_demo_benchmark.h"
 #include "ui.h"
 //#include "play_sound.h"
-//#include "AudioDrv.h"
-#include "audioPwm.h"
+#include "AudioDrv.h"
+#include "AudioPlayer.h"
 /* ------------- USING LVGL v8.3.11 -------------------- */
 
 /* USER CODE END Includes */
@@ -67,7 +67,42 @@ DMA_HandleTypeDef hdma_tim6_up;
 extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+#define NOTE_E5 659
+#define NOTE_C5 523
+#define NOTE_G5 784
+#define NOTE_G4 392
+#define NOTE_A5 880
+#define NOTE_A4 440
+#define NOTE_B4 494
+#define NOTE_AS4 466
+#define NOTE_E4 330
 
+#define BPM   120
+#define Q_MS  (60000 / BPM)   // negra
+#define E_MS  (Q_MS / 2)      // corchea
+
+static const note_t mario_intro[] = {
+    {NOTE_E5, E_MS, WF_SQUARE, 1500},
+    {NOTE_E5, E_MS, WF_SQUARE, 1500},
+    {NOTE_E5, E_MS, WF_SQUARE, 1500},
+    {NOTE_C5, E_MS, WF_SQUARE, 1500},
+    {NOTE_E5, E_MS, WF_SQUARE, 1500},
+    {NOTE_G5, Q_MS, WF_SQUARE, 1500},
+    {NOTE_G4, Q_MS, WF_SQUARE, 1500},
+    {0,       E_MS, WF_SINE,      0},
+    {NOTE_C5, E_MS, WF_SQUARE, 1500},
+    {NOTE_G4, E_MS, WF_SQUARE, 1500},
+    {NOTE_E4, E_MS, WF_SQUARE, 1500},
+    {NOTE_A4, E_MS, WF_SQUARE, 1500},
+    {NOTE_B4, E_MS, WF_SQUARE, 1500},
+    {NOTE_AS4,E_MS, WF_SQUARE, 1500},
+    {NOTE_A4, E_MS, WF_SQUARE, 1500},
+    {NOTE_G4, E_MS, WF_SQUARE, 1500},
+    {NOTE_E5, E_MS, WF_SQUARE, 1500},
+    {NOTE_G5, E_MS, WF_SQUARE, 1500},
+    {NOTE_A5, Q_MS, WF_SQUARE, 1500},
+};
+#define MARIO_LEN (sizeof(mario_intro)/sizeof(mario_intro[0]))
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,10 +115,6 @@ static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-// reemplazo el init del DAC por estos dos:
-
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim); // calback devil de HAL redefinido
-
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE END PFP */
@@ -259,7 +290,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    uint8_t sonando=0;
+
+    AudioPlayer_Init(10000);                       // fs = 10 kHz
+	AudioPlayer_SetVolume(0.15f);
+	AudioPlayer_StartMusic(mario_intro, MARIO_LEN, 1);  // loop
+
+	uint8_t sonando=1;
+
     while (1) {
         lv_timer_handler(); /* procesa LVGL */
         lv_port_indev_clear_buttons(); /* clear button states after processing */
@@ -275,16 +312,16 @@ int main(void)
 
 
         if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
-        	if(!sonando){
-				// fs = 16000 Hz, tono = 1 kHz
-				AudioPWM_Start(1000.0f, 16000);
-				sonando = 1;
-        	} else {
-        		// ... cuando quieras parar:
-        		AudioPWM_Stop();
-        		sonando = 0;
+        	if(!sonando) {
+        		AudioPlayer_StartMusic(mario_intro, MARIO_LEN, 1);
+        		sonando=1;
+        	}
+        	else {
+        		AudioPlayer_StopAll();
+        		sonando=0;
         	}
         }
+
 
         HAL_Delay(5); /* 5 ms está bien (200 FPS máx) */
     /* USER CODE END WHILE */

@@ -8,37 +8,32 @@
 #ifndef AUDIODRV_AUDIODRV_H_
 #define AUDIODRV_AUDIODRV_H_
 
-#ifdef AUD_DAC
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 
-typedef enum {
-    WF_SINE = 0,
-    WF_TRI,
-    WF_SAW,
-    WF_SQUARE,
-    WF_NOISE
-} wave_t;
-
-#define DMA_BUFFER_SIZE 32
-#define SAMPLE_FREQ 10000
-#define DAC_OUT_MID 2048 //el DAC es de 12 bits (valores 0-4095)
-#define FS_HZ            10000U
-//#define DMA_BUFFER_SIZE  64
-//#define DAC_MID          2048
-#define FADE_SAMPLES     64      // ~6.4 ms a 10 kHz
-
-
-extern volatile uint16_t dac_dma_buffer[2* DMA_BUFFER_SIZE]; // 2 mitades de 32 bits
-
-void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac_);
-
-void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac_);
-
-//void Audio_Beep(float freq_hz, uint32_t dur_ms);
-void Audio_BeepEx(float freq_hz, uint32_t dur_ms, wave_t wf, uint16_t amp);
-void audioInit();
-void audio_task(void);
-
+#ifndef AUDIO_DMA_BLOCK
+#define AUDIO_DMA_BLOCK  64u
 #endif
+
+/* Callback: llená 'dst' con N muestras 12-bit (0..4095, centro=2048) */
+typedef void (*AudioPwmFill12Fn)(uint16_t* dst, uint32_t n);
+
+/* Init del driver. fs_hz = TIM6 real (ej: 10000). TIM3 debe estar ya en PWM. */
+void AudioPwmDrv_Init(uint32_t fs_hz);
+
+/* Arranca PWM + DMA (circular) usando TIM6_UP -> TIM3->CCR3 */
+void AudioPwmDrv_Start(void);
+
+/* Detiene limpio (CCR a 50%) */
+void AudioPwmDrv_Stop(void);
+
+/* Registra la función de llenado (se llama en half/full) */
+void AudioPwmDrv_SetFill12Fn(AudioPwmFill12Fn fn);
+
+/* Actualiza ARR de TIM3 si lo cambiás en runtime (carrier) */
+void AudioPwmDrv_SetPwmARR(uint32_t arr);
+
+/* Lee fs actual (para el player) */
+uint32_t AudioPwmDrv_GetFs(void);
+
 #endif /* AUDIODRV_AUDIODRV_H_ */
