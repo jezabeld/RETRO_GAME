@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include "cmsis_os.h"
-#include "events.h"
+#include "synchronization.h"
 #include "BootMng.h" // define TEST_MODE
 
 #ifdef TEST_MODE   // activar sólo en builds de prueba

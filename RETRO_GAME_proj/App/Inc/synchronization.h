@@ -1,14 +1,14 @@
 /*
- * events.h
+ * synchronization.h
  *
- * Definiciones de eventos y declaraciones de colas del sistema
+ * Definiciones de eventos, colas y semáforos de sincronización del sistema
  *
  *  Created on: Aug 12, 2025
  *      Author: jez
  */
 
-#ifndef INC_EVENTS_H_
-#define INC_EVENTS_H_
+#ifndef INC_SYNCHRONIZATION_H_
+#define INC_SYNCHRONIZATION_H_
 
 #include <stdint.h>
 #include "cmsis_os.h"
@@ -27,6 +27,12 @@ extern QueueHandle_t qLog;
 extern QueueHandle_t qSystem;
 extern QueueHandle_t qGame;
 extern QueueHandle_t qInHand;
+
+/* ======================
+ * Semáforos de sincronización entre tareas
+ * ====================== */
+extern SemaphoreHandle_t semGraphEngineReady;  // GraphEngine → UIController  
+extern SemaphoreHandle_t semUiReady;           // UIController → GraphEngine
 
 /* ======================
  * Eventos del sistema
@@ -77,6 +83,22 @@ enum {
     RES_ASSET_ERR,
 
 /* ======================
+ * Input crudos (RAW_)
+ * ====================== */
+	RAW_BTN_A = 50,
+	RAW_BTN_B,
+	RAW_BTN_C,
+	RAW_BTN_D,
+
+/* ======================
+ * Input procesados (INP_)
+ * ====================== */
+	INP_BTN_A = 55,
+	INP_BTN_B,
+	INP_BTN_C,
+	INP_BTN_D,
+
+/* ======================
  * Drivers: TFT_, AUD_, HAP_, DBG_, INP_, MEM_, TIM_
  * ====================== */
     TFT_OK = 80,
@@ -103,4 +125,4 @@ enum {
 
 
 
-#endif /* INC_EVENTS_H_ */
+#endif /* INC_SYNCHRONIZATION_H_ */

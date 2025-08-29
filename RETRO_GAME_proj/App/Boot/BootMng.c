@@ -10,6 +10,7 @@
 
 #include "BootMng.h"
 #include "cmsis_os.h"
+#include "main.h"
 
 /* Incluye headers de cada componente */
 #include "EventDispatcher.h"
@@ -28,14 +29,16 @@
 #include "HapticDrv.h"
 #include "InputDrv.h"
 #include "TimerDrv.h"
-#include "events.h"
+#include "synchronization.h"
 #include "LogSink.h"
 #include "CommandParser.h"
+#include "images.h"
 #ifdef TEST_MODE
 #include "FlowPlans.h"
 #endif
 
 #define QUEUE_SIZE 10
+#define AUDIO_FS_HZ   10000u   // frecuencia de muestreo (TIM6 Update)
 
 /* ===== Handlers de tareas ===== */
 TaskHandle_t tskEvntDisp;
@@ -62,6 +65,13 @@ QueueHandle_t qGame;
 //QueueHandle_t qRender;
 QueueHandle_t qInHand;
 
+/* ===== Handlers de semáforos de sincronización ===== */
+SemaphoreHandle_t semGraphEngineReady;
+SemaphoreHandle_t semUiReady;
+
+tft_t myTft;
+extern SPI_HandleTypeDef hspi1;
+
 void bootInit(void)
 {
 	/* ===== INICIALIZAR DRIVERS ===== */
@@ -71,8 +81,10 @@ void bootInit(void)
 	uartSendString("BootMng: Inicializando drivers...\r\n");
 	accelDrvInit();
 	eepromDrvInit();
-	tftInit();
-	audioInit();
+	tftInit(&myTft, &hspi1, TFT_CS_GPIO_Port, TFT_CS_Pin, TFT_DC_GPIO_Port, TFT_DC_Pin, TFT_RS_GPIO_Port, TFT_RS_Pin);
+	tftFillScreen(&myTft, 0x0000); // Limpiar pantalla con negro
+	tftDrawImage(&myTft, 0, 0, TFT_WIDTH, TFT_HEIGHT, (uint16_t*)imgSplash);
+	audioInit(AUDIO_FS_HZ);
 	hapticInit();
 	
 	input_hw_cfg_t inputConfig = {.buttonCount = 4, .joystickChannels = 2};
@@ -111,23 +123,32 @@ void bootInit(void)
     //vQueueAddToRegistry(qRender,  "qRender");
     vQueueAddToRegistry(qInHand,  "qInHand");
 
+    /* ===== CREACIÓN DE SEMÁFOROS ===== */
+    semGraphEngineReady = xSemaphoreCreateBinary();
+    semUiReady = xSemaphoreCreateBinary();
+    configASSERT(semGraphEngineReady && semUiReady);
+
+    /* Registro para depuración */
+    vQueueAddToRegistry(semGraphEngineReady, "Semáforo GFX");
+    vQueueAddToRegistry(semUiReady, "Semáforo UI");
+
     /* ===== CREACIÓN DE TAREAS ===== */
-    ret = xTaskCreate(EventDispatcherTask, "EvntDisp", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+5, &tskEvntDisp);
+    ret = xTaskCreate(EventDispatcherTask, "EvntDisp", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+5, &tskEvntDisp);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(GraphEngineTask, "Graph", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, &tskGraph);
+    ret = xTaskCreate(GraphEngineTask, "Graph", 6*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, &tskGraph);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(UIControllerTask, "UiCtrl", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskUiCtrl);
+    ret = xTaskCreate(UIControllerTask, "UiCtrl", 4*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskUiCtrl);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(SystemManagerTask, "SysMng", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskSysMng);
+    ret = xTaskCreate(SystemManagerTask, "SysMng", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskSysMng);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(PersistenceTask, "Persist", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &tskPersist);
+    ret = xTaskCreate(PersistenceTask, "Persist", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &tskPersist);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(GameManagerTask, "GameMng", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+3, &tskGameMng);
+    ret = xTaskCreate(GameManagerTask, "GameMng", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+3, &tskGameMng);
     configASSERT(pdPASS == ret);
     vTaskSuspend(tskGameMng);
 
@@ -135,11 +156,11 @@ void bootInit(void)
     configASSERT(pdPASS == ret);
     vTaskSuspend(tskRender);
 
-    ret = xTaskCreate(InputHandlerTask, "InpHnd", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+3, &tskInpHnd);
+    ret = xTaskCreate(InputHandlerTask, "InpHnd", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+3, &tskInpHnd);
     configASSERT(pdPASS == ret);
     vTaskSuspend(tskInpHnd);
 
-    ret = xTaskCreate(LogSinkTask, "LogSink", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &tskLogSink);
+    ret = xTaskCreate(LogSinkTask, "LogSink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &tskLogSink);
     configASSERT(pdPASS == ret);
 
     uartSendString("BootMng: inicializacion de colas y tareas completada\r\n");

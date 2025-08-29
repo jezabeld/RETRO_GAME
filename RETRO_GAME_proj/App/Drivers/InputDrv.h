@@ -17,5 +17,6 @@ typedef struct {
 } input_hw_cfg_t;
 
 int inputInit(const input_hw_cfg_t *cfg);
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 #endif /* DRIVERS_INPUTDRV_H_ */

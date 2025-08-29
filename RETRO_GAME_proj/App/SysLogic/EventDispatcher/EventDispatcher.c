@@ -6,7 +6,7 @@
  */
 
 #include "EventDispatcher.h"
-#include "events.h"
+#include "synchronization.h"
 #include <stdbool.h>
 #include "BootMng.h" // aca esta el define de TEST_MODE
 
@@ -15,7 +15,7 @@
 #include "FlowAssert.h"
 bool traceEnabled = true;
 #else
-bool traceEnabled = false;
+bool traceEnabled = true;
 #endif
 
 static void routeEvent(event_id_t event);
@@ -46,6 +46,15 @@ void EventDispatcherTask(void *pvParameters) {
 
 static void routeEvent(event_id_t event) {
     switch (event) {
+		case RAW_BTN_A:
+		case RAW_BTN_B:
+		case RAW_BTN_C:
+		case RAW_BTN_D:
+			//debounce y envia a UI
+			event_id_t new_event = event +5; // pasa de RAW a INP
+			xQueueSend(qUiCtrl, &new_event, 0);
+			break;
+
     	case DBG_TRACE_ON:
     		traceEnabled = true;
     		break;

@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -59,28 +61,30 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
-#define BTN_LEFT_Pin GPIO_PIN_0
-#define BTN_LEFT_GPIO_Port GPIOC
-#define BTN_LEFT_EXTI_IRQn EXTI0_IRQn
-#define BTN_DOWN_Pin GPIO_PIN_1
-#define BTN_DOWN_GPIO_Port GPIOC
-#define BTN_DOWN_EXTI_IRQn EXTI1_IRQn
-#define BTN_RIGHT_Pin GPIO_PIN_2
-#define BTN_RIGHT_GPIO_Port GPIOC
-#define BTN_RIGHT_EXTI_IRQn EXTI2_IRQn
-#define BTN_UP_Pin GPIO_PIN_3
-#define BTN_UP_GPIO_Port GPIOC
-#define BTN_UP_EXTI_IRQn EXTI3_IRQn
+#define BTN_B_Pin GPIO_PIN_0
+#define BTN_B_GPIO_Port GPIOC
+#define BTN_B_EXTI_IRQn EXTI0_IRQn
+#define BTN_A_Pin GPIO_PIN_1
+#define BTN_A_GPIO_Port GPIOC
+#define BTN_A_EXTI_IRQn EXTI1_IRQn
+#define BTN_C_Pin GPIO_PIN_2
+#define BTN_C_GPIO_Port GPIOC
+#define BTN_C_EXTI_IRQn EXTI2_IRQn
+#define BTN_D_Pin GPIO_PIN_3
+#define BTN_D_GPIO_Port GPIOC
+#define BTN_D_EXTI_IRQn EXTI3_IRQn
+#define JY_VRY_Pin GPIO_PIN_0
+#define JY_VRY_GPIO_Port GPIOA
 #define JY_VRX_Pin GPIO_PIN_1
 #define JY_VRX_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define JY_VRY_Pin GPIO_PIN_4
-#define JY_VRY_GPIO_Port GPIOA
 #define TFT_DC_Pin GPIO_PIN_6
 #define TFT_DC_GPIO_Port GPIOA
+#define AUD_OUT_Pin GPIO_PIN_0
+#define AUD_OUT_GPIO_Port GPIOB
 #define TFT_RS_Pin GPIO_PIN_7
 #define TFT_RS_GPIO_Port GPIOC
 #define TMS_Pin GPIO_PIN_13

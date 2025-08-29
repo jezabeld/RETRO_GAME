@@ -6,7 +6,7 @@
  */
 
 #include "FlowAssert.h"
-#include "events.h"
+#include "synchronization.h"
 
 #ifdef TEST_MODE
 // Paso 0: (dejarlo vacío y se salta)
