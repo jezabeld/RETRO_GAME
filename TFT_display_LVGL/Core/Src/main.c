@@ -291,11 +291,45 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-    AudioPlayer_Init(10000);                       // fs = 10 kHz
-	AudioPlayer_SetVolume(0.15f);
-	AudioPlayer_StartMusic(mario_intro, MARIO_LEN, 1);  // loop
+    // Crear instancia del driver de audio e inicializar hardware
+    static audioDrv_t audio_drv;
+    audioInit(&audio_drv, &htim3, TIM_CHANNEL_3, &htim6, &hdma_tim6_up, 10000);
+    
+    // Inicializar el player con la instancia
+    playerInit(&audio_drv);
+    playerSetVolume(0.15f);
 
-	uint8_t sonando=1;
+    // Definir beeps de prueba más distintivos y audibles
+    //    note_t beep_high = {800, 200, WF_SQUARE, 1500};
+    note_t beep_high = {1200, 150, WF_SQUARE, 1800};  // Beep muy agudo y fuerte
+    note_t beep_mid  = {600, 300, WF_SQUARE, 1600};   // Beep medio, también square para claridad
+    note_t beep_low  = {300, 500, WF_SQUARE, 1400};   // Beep grave pero audible
+    
+    // Secuencia de prueba del AudioPlayer
+    HAL_Delay(1000);  // Esperar un momento
+    
+    // 1) Reproducir 3 beeps diferentes
+    playerPlaySfx(beep_high);  // Beep agudo
+    HAL_Delay(500);
+    playerPlaySfx(beep_mid);   // Beep medio  
+    HAL_Delay(600);
+    playerPlaySfx(beep_low);   // Beep grave
+    HAL_Delay(800);
+    
+    // 2) Comenzar música
+    playerStartMusic(mario_intro, MARIO_LEN, 1);  // loop
+    HAL_Delay(3000);  // Dejar que suene 3 segundos
+    
+    // 3) Reproducir beep en medio de la música (debe interrumpir temporalmente)
+    playerPlaySfx(beep_high);
+    HAL_Delay(2000);  // Esperar 2 segundos (música debe retomar)
+    
+    // 4) Parar todo después de un tiempo
+    HAL_Delay(4000);
+    playerStopAll();
+    HAL_Delay(1000);
+
+	uint8_t sonando=0;
 
     while (1) {
         lv_timer_handler(); /* procesa LVGL */
@@ -313,11 +347,11 @@ int main(void)
 
         if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
         	if(!sonando) {
-        		AudioPlayer_StartMusic(mario_intro, MARIO_LEN, 1);
+        		playerStartMusic(mario_intro, MARIO_LEN, 1);
         		sonando=1;
         	}
         	else {
-        		AudioPlayer_StopAll();
+        		playerStopAll();
         		sonando=0;
         	}
         }

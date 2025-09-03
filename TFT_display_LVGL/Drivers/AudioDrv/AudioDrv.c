@@ -6,90 +6,130 @@
  */
 
 #include "AudioDrv.h"
-#include "main.h"
 
-extern TIM_HandleTypeDef htim3;        // TIM3_CH3 PB0 PWM
-extern TIM_HandleTypeDef htim6;        // sample rate
-extern DMA_HandleTypeDef hdma_tim6_up; // DMA request TIM6_UP
+/* Instancia estática para callbacks DMA (driver de una sola instancia) */
+static audioDrv_t *g_audio_instance = 0;
 
-static volatile uint16_t s_pwm[2 * AUDIO_DMA_BLOCK];
-static AudioPwmFill12Fn  s_fill12 = 0;
-static uint32_t          s_fs = 10000;
-static uint32_t          s_arr = 839;   // ≈100 kHz (PSC=0, clk=84MHz)
+/* Callbacks DMA privados */
+static void audioDmaHalfCallback(DMA_HandleTypeDef *hdma);
+static void audioDmaFullCallback(DMA_HandleTypeDef *hdma);
 
-static void audio_dma_half_callback(DMA_HandleTypeDef *hdma);
-static void audio_dma_full_callback(DMA_HandleTypeDef *hdma);
-
-static inline uint16_t map12_to_duty(uint16_t s12, uint32_t arr) {
-    return (uint16_t)(( (uint32_t)s12 * arr ) / 4095u);
+/* Mapea sample de 12-bit (0..4095) a duty cycle PWM */
+static inline uint16_t audioMap12ToDuty(uint16_t s12, uint32_t pwm_arr) {
+    return (uint16_t)(( (uint32_t)s12 * pwm_arr ) / AUDIO_SAMPLE_MAX);
 }
 
-void AudioPwmDrv_Init(uint32_t fs_hz)
+int audioInit(audioDrv_t *audio, TIM_HandleTypeDef *pwm_tim, uint32_t pwm_ch, 
+              TIM_HandleTypeDef *fs_tim, DMA_HandleTypeDef *dma, 
+              uint32_t fs_hz)
 {
-    s_fs = fs_hz;
-    s_arr = __HAL_TIM_GET_AUTORELOAD(&htim3);
-    uint16_t mid = map12_to_duty(2048, s_arr);
-    for (uint32_t i=0;i<2*AUDIO_DMA_BLOCK;i++) s_pwm[i] = mid;
+    if (!audio || !pwm_tim || !fs_tim || !dma) return -1;
+    
+    /* Configurar el objeto */
+    audio->pwm_timer = pwm_tim;
+    audio->pwm_channel = pwm_ch;
+    audio->pwm_arr = __HAL_TIM_GET_AUTORELOAD(pwm_tim);
+    audio->fs_timer = fs_tim;
+    audio->dma_handle = dma;
+    audio->fs_hz = fs_hz;
+    audio->fill_callback = 0;
+    
+    /* Inicializar buffer con silencio (50% duty) */
+    uint16_t mid = audioMap12ToDuty(AUDIO_SAMPLE_CENTER, audio->pwm_arr);
+    for (uint32_t i = 0; i < 2 * AUDIO_DMA_BLOCK; i++) {
+        audio->pwm_buffer[i] = mid;
+    }
+    
+    /* Registrar instancia para callbacks DMA */
+    g_audio_instance = audio;
+    
+    return 0;
 }
 
-void AudioPwmDrv_SetPwmARR(uint32_t arr) { s_arr = arr; }
-uint32_t AudioPwmDrv_GetFs(void) { return s_fs; }
-void AudioPwmDrv_SetFill12Fn(AudioPwmFill12Fn fn) { s_fill12 = fn; }
+uint32_t audioGetFs(audioDrv_t *audio) { 
+    return audio ? audio->fs_hz : 0; 
+}
 
-void AudioPwmDrv_Start(void)
+void audioSetFillFn(audioDrv_t *audio, audioPwmFill12Fn fn) { 
+    if (audio) audio->fill_callback = fn; 
+}
+
+void audioStart(audioDrv_t *audio)
 {
-    // carrier a 50%
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, s_arr/2);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+    if (!audio) return;
+    
+    // Configurar PWM al 50% duty inicialmente
+    __HAL_TIM_SET_COMPARE(audio->pwm_timer, audio->pwm_channel, audio->pwm_arr/2);
+    HAL_TIM_PWM_Start(audio->pwm_timer, audio->pwm_channel);
 
     // Registrar callbacks específicos para este DMA
-    hdma_tim6_up.XferHalfCpltCallback = audio_dma_half_callback;
-    hdma_tim6_up.XferCpltCallback = audio_dma_full_callback;
+    audio->dma_handle->XferHalfCpltCallback = audioDmaHalfCallback;
+    audio->dma_handle->XferCpltCallback = audioDmaFullCallback;
 
-    // DMA circular con IT: TIM6_UP → CCR3
-    HAL_DMA_Start_IT(&hdma_tim6_up,
-                     (uint32_t)s_pwm,
-                     (uint32_t)&TIM3->CCR3,
+    // Calcular dirección del registro CCR según el canal
+    uint32_t ccr_address;
+    switch (audio->pwm_channel) {
+        case TIM_CHANNEL_1: ccr_address = (uint32_t)&audio->pwm_timer->Instance->CCR1; break;
+        case TIM_CHANNEL_2: ccr_address = (uint32_t)&audio->pwm_timer->Instance->CCR2; break;
+        case TIM_CHANNEL_3: ccr_address = (uint32_t)&audio->pwm_timer->Instance->CCR3; break;
+        case TIM_CHANNEL_4: ccr_address = (uint32_t)&audio->pwm_timer->Instance->CCR4; break;
+        default: return;
+    }
+
+    // DMA circular con IT: fs_timer_UP → PWM_CCRx
+    HAL_DMA_Start_IT(audio->dma_handle,
+                     (uint32_t)audio->pwm_buffer,
+                     ccr_address,
                      2*AUDIO_DMA_BLOCK);
 
-    __HAL_TIM_ENABLE_DMA(&htim6, TIM_DMA_UPDATE);
-    HAL_TIM_Base_Start(&htim6);
+    __HAL_TIM_ENABLE_DMA(audio->fs_timer, TIM_DMA_UPDATE);
+    HAL_TIM_Base_Start(audio->fs_timer);
 }
 
-void AudioPwmDrv_Stop(void)
+void audioStop(audioDrv_t *audio)
 {
-    HAL_TIM_Base_Stop(&htim6);
-    __HAL_TIM_DISABLE_DMA(&htim6, TIM_DMA_UPDATE);
-    HAL_DMA_Abort(&hdma_tim6_up);
-    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, s_arr/2);
-    // opcional: HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3);
+    if (!audio) return;
+    
+    HAL_TIM_Base_Stop(audio->fs_timer);
+    __HAL_TIM_DISABLE_DMA(audio->fs_timer, TIM_DMA_UPDATE);
+    HAL_DMA_Abort(audio->dma_handle);
+    __HAL_TIM_SET_COMPARE(audio->pwm_timer, audio->pwm_channel, audio->pwm_arr/2);
+    // opcional: HAL_TIM_PWM_Stop(audio->pwm_timer, audio->pwm_channel);
 }
 
-/* ==== Callbacks DMA específicos para TIM6 ==== */
-static void audio_dma_half_callback(DMA_HandleTypeDef *hdma)
+/* ==== Callbacks DMA específicos ==== */
+static void audioDmaHalfCallback(DMA_HandleTypeDef *hdma)
 {
-    if (s_fill12) {
+    if (!g_audio_instance) return;
+    
+    if (g_audio_instance->fill_callback) {
         uint16_t tmp[AUDIO_DMA_BLOCK];
-        s_fill12(tmp, AUDIO_DMA_BLOCK);
-        for (uint32_t i=0;i<AUDIO_DMA_BLOCK;i++)
-            ((uint16_t*)s_pwm)[i] = map12_to_duty(tmp[i], s_arr);
+        g_audio_instance->fill_callback(tmp, AUDIO_DMA_BLOCK);
+        for (uint32_t i = 0; i < AUDIO_DMA_BLOCK; i++) {
+            g_audio_instance->pwm_buffer[i] = audioMap12ToDuty(tmp[i], g_audio_instance->pwm_arr);
+        }
     } else {
-        uint16_t mid = map12_to_duty(2048, s_arr);
-        for (uint32_t i=0;i<AUDIO_DMA_BLOCK;i++)
-            ((uint16_t*)s_pwm)[i] = mid;
+        uint16_t mid = audioMap12ToDuty(AUDIO_SAMPLE_CENTER, g_audio_instance->pwm_arr);
+        for (uint32_t i = 0; i < AUDIO_DMA_BLOCK; i++) {
+            g_audio_instance->pwm_buffer[i] = mid;
+        }
     }
 }
 
-static void audio_dma_full_callback(DMA_HandleTypeDef *hdma)
+static void audioDmaFullCallback(DMA_HandleTypeDef *hdma)
 {
-    if (s_fill12) {
+    if (!g_audio_instance) return;
+    
+    if (g_audio_instance->fill_callback) {
         uint16_t tmp[AUDIO_DMA_BLOCK];
-        s_fill12(tmp, AUDIO_DMA_BLOCK);
-        for (uint32_t i=0;i<AUDIO_DMA_BLOCK;i++)
-            ((uint16_t*)s_pwm)[AUDIO_DMA_BLOCK+i] = map12_to_duty(tmp[i], s_arr);
+        g_audio_instance->fill_callback(tmp, AUDIO_DMA_BLOCK);
+        for (uint32_t i = 0; i < AUDIO_DMA_BLOCK; i++) {
+            g_audio_instance->pwm_buffer[AUDIO_DMA_BLOCK + i] = audioMap12ToDuty(tmp[i], g_audio_instance->pwm_arr);
+        }
     } else {
-        uint16_t mid = map12_to_duty(2048, s_arr);
-        for (uint32_t i=0;i<AUDIO_DMA_BLOCK;i++)
-            ((uint16_t*)s_pwm)[AUDIO_DMA_BLOCK+i] = mid;
+        uint16_t mid = audioMap12ToDuty(AUDIO_SAMPLE_CENTER, g_audio_instance->pwm_arr);
+        for (uint32_t i = 0; i < AUDIO_DMA_BLOCK; i++) {
+            g_audio_instance->pwm_buffer[AUDIO_DMA_BLOCK + i] = mid;
+        }
     }
 }
