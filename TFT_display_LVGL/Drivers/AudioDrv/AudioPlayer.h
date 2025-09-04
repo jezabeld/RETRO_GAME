@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include "AudioDrv.h"
 
-typedef enum { WF_SINE=0, WF_TRI, WF_SAW, WF_SQUARE } wave_t;
+typedef enum { WF_SINE=0, WF_TRI, WF_SAW, WF_SQUARE, WF_NOISE } wave_t;
 
 typedef struct {
     uint16_t freq_hz;   // 0 = silencio

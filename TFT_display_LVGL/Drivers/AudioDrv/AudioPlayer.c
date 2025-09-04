@@ -6,6 +6,7 @@
  */
 #include "AudioPlayer.h"
 #include <math.h>
+#include <stdlib.h>
 
 /**********************
  *      DEFINES
@@ -64,6 +65,7 @@ static inline float waveSample(float a, wave_t wf) {
     case WF_SQUARE: return (sinf(a) >= 0.0f) ? 1.0f : -1.0f;
     case WF_SAW: { float ph=a*(1.0f/(2.0f*M_PI)); ph-=(int)ph; return 2.0f*ph-1.0f; }
     case WF_TRI: { float ph=a*(1.0f/(2.0f*M_PI)); ph-=(int)ph; return (ph<0.5f)?(4.0f*ph-1.0f):(-4.0f*ph+3.0f); }
+    case WF_NOISE: {float r = (float)rand() / (float)RAND_MAX; return (2.0f * r) - 1.0f;}
     default: return 0.0f;
     }
 }

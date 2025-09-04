@@ -300,21 +300,64 @@ int main(void)
     playerSetVolume(0.15f);
 
     // Definir beeps de prueba más distintivos y audibles
-    //    note_t beep_high = {800, 200, WF_SQUARE, 1500};
-    note_t beep_high = {1200, 150, WF_SQUARE, 1800};  // Beep muy agudo y fuerte
-    note_t beep_mid  = {600, 300, WF_SQUARE, 1600};   // Beep medio, también square para claridad
-    note_t beep_low  = {300, 500, WF_SQUARE, 1400};   // Beep grave pero audible
+        note_t beep_high = {2048, 200, WF_SINE, 1500}; // buen sonido para solo un beep de boton
+//        note_t beep_mid  = {2048, 200, WF_SQUARE, 1500};
+//        note_t beep_low  = {2048, 200, WF_TRI, 1500};
+    //note_t beep_high = {1200, 150, WF_SQUARE, 1800};  // Beep muy agudo y fuerte
+//    note_t beep_mid  = {440, 300, WF_TRI, 1500};   // Beep medio, también square para claridad
+//    note_t beep_low  = {300, 500, WF_SQUARE, 1500};   // Beep grave pero audible (algo salio mal)
+    note_t beep_table[] = {
+    		 {2048, 200, WF_SINE, 1500}, // 0: buen sonido para solo un beep de boton (se cumplio tiempo, aviso de la nave)
+//			 {440, 300, WF_TRI, 1500},   // 1: Beep medio (beep mas apagado)
+//			{800, 80,  WF_TRI,    1200},  // 2: corto y agudo (click de UI)
+			 {1000,60,  WF_SQUARE, 1000},  // 3: muy corto, “blip” (un buen pip agudo, radar)
+			{523, 120, WF_SINE,   1400},  // 4: DO5 (aggarrar algo, item, seleccion UI, suave)
+//			{440, 150, WF_SINE,   1500},  // 5: beep base LA4 (tono afinación) muy finito
+//			{880, 100, WF_SINE,   1500},  // 6: LA5, más agudo ,
+	    	    {440, 300, WF_NOISE,  900},   // 7: burst de ruido (explosión pequeña)
+//    	    {330, 200, WF_TRI,    1500},  // 8: MI4 triángulo, más amable (medio negativo)
+    	    {660, 100, WF_SQUARE, 1200},  // 9: ALTA square, sonido tipo "alerta"(warning)
+//    	    {550, 80,  WF_SAW,    1400},  // 10: SAW más áspero
+			 {300, 200, WF_SQUARE, 1500},   // 13: Beep grave pero audible (algo salio mal) "NOP"
+//    	    {700, 120, WF_SAW,    1500},  // 11: “bite” agresivo (tocaste algo que no debias)
+//    	    {200, 250, WF_SINE,   1600},  // 12: tono grave (error / warning) *casi no se oye
+
+//    	    {300, 150, WF_TRI,    1500},  // 14: confirmación suave (no se oye casi)
+
+
+    };note_t beep_table[] = {
+   		 {2048, 200, WF_SINE, 1500}, // 0: buen sonido para solo un beep de boton (se cumplio tiempo, aviso de la nave)
+//			 {440, 300, WF_TRI, 1500},   // 1: Beep medio (beep mas apagado)
+//			{800, 80,  WF_TRI,    1200},  // 2: corto y agudo (click de UI)
+			 {1000,60,  WF_SQUARE, 1000},  // 3: muy corto, “blip” (un buen pip agudo, radar)
+			{523, 120, WF_SINE,   1400},  // 4: DO5 (aggarrar algo, item, seleccion UI, suave)
+//			{440, 150, WF_SINE,   1500},  // 5: beep base LA4 (tono afinación) muy finito
+//			{880, 100, WF_SINE,   1500},  // 6: LA5, más agudo ,
+	    	    {440, 300, WF_NOISE,  900},   // 7: burst de ruido (explosión pequeña)
+//    	    {330, 200, WF_TRI,    1500},  // 8: MI4 triángulo, más amable (medio negativo)
+   	    {660, 100, WF_SQUARE, 1200},  // 9: ALTA square, sonido tipo "alerta"(warning)
+//    	    {550, 80,  WF_SAW,    1400},  // 10: SAW más áspero
+			 {300, 200, WF_SQUARE, 1500},   // 13: Beep grave pero audible (algo salio mal) "NOP"
+//    	    {700, 120, WF_SAW,    1500},  // 11: “bite” agresivo (tocaste algo que no debias)
+//    	    {200, 250, WF_SINE,   1600},  // 12: tono grave (error / warning) *casi no se oye
+
+//    	    {300, 150, WF_TRI,    1500},  // 14: confirmación suave (no se oye casi)
+
+
+   };
     
     // Secuencia de prueba del AudioPlayer
     HAL_Delay(1000);  // Esperar un momento
     
-    // 1) Reproducir 3 beeps diferentes
-    playerPlaySfx(beep_high);  // Beep agudo
+    // 1) Reproducir beeps diferentes
+    for(uint8_t i=0; i< sizeof(beep_table)/sizeof(beep_table[0]); i++){
+    playerPlaySfx(beep_table[i]);
     HAL_Delay(500);
-    playerPlaySfx(beep_mid);   // Beep medio  
-    HAL_Delay(600);
-    playerPlaySfx(beep_low);   // Beep grave
-    HAL_Delay(800);
+    }
+//    playerPlaySfx(beep_mid);   // Beep medio
+//    HAL_Delay(600);
+//    playerPlaySfx(beep_low);   // Beep grave
+//    HAL_Delay(800);
     
     // 2) Comenzar música
     playerStartMusic(mario_intro, MARIO_LEN, 1);  // loop
