@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include "cmsis_os.h"
+#include "BootMng.h"
 
 /* ======================
  * Declaraciones externas de colas del sistema
@@ -31,7 +32,7 @@ extern QueueHandle_t qInHand;
 /* ======================
  * Semáforos de sincronización entre tareas
  * ====================== */
-extern SemaphoreHandle_t semGraphEngineReady;  // GraphEngine → UIController  
+extern SemaphoreHandle_t semGFXReady;  // GraphEngine → UIController  
 extern SemaphoreHandle_t semUiReady;           // UIController → GraphEngine
 
 /* ======================
@@ -56,7 +57,6 @@ enum {
     SE_EXIT_GAME,          // UI: salir al menú principal
 	SE_SHOW_MENU,
 	SE_HIDE_MENU,
-	SE_GFX_RUNNING,        // GraphEngine: indicador de actividad
 
 /* ======================
  * Game Events (GE_)
@@ -81,6 +81,12 @@ enum {
  * ====================== */
     RES_ASSET_READY = 30,
     RES_ASSET_ERR,
+
+/* ======================
+ * Audio Player (AUP_)
+ * ====================== */
+    AUP_BEEP_1 = 40,      // Beep simple corto (confirmación)
+    AUP_BEEP_2,      // Beep simple largo (error/alerta)
 
 /* ======================
  * Input crudos (RAW_)
@@ -121,6 +127,14 @@ enum {
  * ====================== */
     DBG_TRACE_ON = 100,
     DBG_TRACE_OFF,
+
+/* ======================
+ * TEST_MODE
+ * ====================== */
+#ifdef TEST_MODE
+	SE_GFX_INIT = 120,     // GraphEngine: LVGL inicializado (solo para test)
+	SE_GFX_RUNNING,        // GraphEngine: indicador de actividad (solo para test)
+#endif
 };
 
 

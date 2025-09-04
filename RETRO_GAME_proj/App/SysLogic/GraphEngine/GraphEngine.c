@@ -24,22 +24,30 @@ void GraphEngineTask(void *pvParameters)
     lv_port_indev_init(); /* <-- registra input devices */
 
     // Señalizar que GraphEngine está listo 
-    xSemaphoreGive(semGraphEngineReady);
+    xSemaphoreGive(semGFXReady);
+    
+#ifdef TEST_MODE
+    // Enviar evento para FlowPlans indicando que LVGL está inicializado
+    event_id_t gfxInitEvent = SE_GFX_INIT;
+    xQueueSend(qEvents, &gfxInitEvent, 0);
+#endif
     
     // Esperar que UI esté lista
-    xSemaphoreTake(semUiReady, portMAX_DELAY);
     uxStackGFXTask = uxTaskGetStackHighWaterMark(NULL);
+    xSemaphoreTake(semUiReady, portMAX_DELAY);
     // Fase 2: Loop principal LVGL
     for(;;)
     {
-        // Enviar evento SE_GFX_RUNNING para indicar actividad
+#ifdef TEST_MODE
+        // Enviar evento SE_GFX_RUNNING para indicar actividad (solo para test)
         event_id_t gfxEvent = SE_GFX_RUNNING;
         xQueueSend(qEvents, &gfxEvent, 0);
+#endif
         
         lv_timer_handler(); /* procesa LVGL */
 		lv_port_indev_clear_buttons(); /* clear button states after processing */
 
 		uxStackGFXTask = uxTaskGetStackHighWaterMark(NULL);
-        vTaskDelay(pdMS_TO_TICKS(10)); // Reducido para mejor responsividad
+        vTaskDelay(pdMS_TO_TICKS(10)); 
     }
 }

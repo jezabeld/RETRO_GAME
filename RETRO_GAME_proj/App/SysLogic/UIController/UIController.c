@@ -23,8 +23,8 @@ void UIControllerTask(void *pvParameters)
     
     for(;;)
     {
-        // Esperar eventos en qUiCtrl con timeout para no bloquear indefinidamente
-        if (xQueueReceive(qUiCtrl, &receivedEvent, pdMS_TO_TICKS(2000)) == pdTRUE) {
+    	uxStackUiTask = uxTaskGetStackHighWaterMark(NULL);
+        if (xQueueReceive(qUiCtrl, &receivedEvent, portMAX_DELAY)) {
             
             switch (receivedEvent) {
                 case CFG_HAS_SAVE:
@@ -37,7 +37,7 @@ void UIControllerTask(void *pvParameters)
                     
                 case SE_SHOW_MENU:
                 	// Esperar que LVGL esté inicializado
-                	xSemaphoreTake(semGraphEngineReady, portMAX_DELAY);
+                	xSemaphoreTake(semGFXReady, portMAX_DELAY);
                 	
                 	// Inicializar el menú
                 	ui_init();
@@ -64,9 +64,6 @@ void UIControllerTask(void *pvParameters)
                     // Evento no manejado - silencioso
                     break;
             }
-        } else {
-            // Timeout - UI sigue funcionando
-        }
-        uxStackUiTask = uxTaskGetStackHighWaterMark(NULL);
+        } 
     }
 }
