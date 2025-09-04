@@ -246,12 +246,13 @@ void tftExecuteCommandList(tft_t * tft, const uint8_t * addr)
 	}
 }
 
-void tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
+uint8_t tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
 		GPIO_TypeDef * csPort, uint16_t csPin,
 		GPIO_TypeDef * dcPort, uint16_t dcPin,
 		GPIO_TypeDef * resPort, uint16_t resPin)
 {
-
+	if (!tft || !hSpi) return 1; // Invalid parameters
+	
 	tft->hSpi = hSpi;
 	tft->csPort = csPort;
 	tft->csPin = csPin;
@@ -264,7 +265,8 @@ void tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
 	tftReset(tft);
 	tftExecuteCommandList(tft, initCmds);
 	tftUnselect(tft);
-
+	
+	return 0; // Success
 }
 
 void tftSetAddressWindow(tft_t * tft, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {

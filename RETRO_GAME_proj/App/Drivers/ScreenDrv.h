@@ -41,7 +41,7 @@ typedef struct{
 	uint16_t resPin;
 } tft_t;
 
-void tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
+uint8_t tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
 		GPIO_TypeDef * csPort, uint16_t csPin,
 		GPIO_TypeDef * dcPort, uint16_t dcPin,
 		GPIO_TypeDef * resPort, uint16_t resPin);
