@@ -9,7 +9,7 @@
 #include "LogSink.h"
 #include "CommandParser.h"
 #include "UARTDrv.h"
-#include "events.h"
+#include "synchronization.h"
 #include "cmsis_os.h"
 
 /* ======================

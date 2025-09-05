@@ -6,7 +6,7 @@
  */
 
 #include "SystemManager.h"
-#include "events.h"
+#include "synchronization.h"
 #include "systemDefs.h"
 #include "cmsis_os.h"
 

@@ -7,12 +7,7 @@
 
 #include "TimerDrv.h"
 
-int timerInitLvgl(void)
-{
-    return 0;
+uint8_t timerInit(void){
+	return 0u;
 }
 
-int timerRegister(timer_cb_t cb, uint32_t period_ms)
-{
-    return 0;
-}

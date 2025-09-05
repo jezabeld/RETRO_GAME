@@ -1,7 +1,7 @@
 /*
  * ScreenDrv.h
  *
- *  Created on: Aug 12, 2025
+ *  Created on: May 5, 2025
  *      Author: jez
  */
 
@@ -11,8 +11,54 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-int tftInit(void);
-int tftSetAddressWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
-int tftDrawImageDMA(const uint8_t* imageData, uint32_t size);
+#include "stm32f446xx.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_spi.h"
+#include "fonts.h"
+
+//#define USE_DMA_CB 1 // uncomment to use DMA callback function define in this library
+
+#define TFT_WIDTH 128  //
+#define TFT_HEIGHT 160 // LINES for 1.8"
+
+// Color definitions
+#define	TFT_COLOR_BLACK   0x0000
+#define	TFT_COLOR_BLUE    0x001F
+#define	TFT_COLOR_RED     0xF800
+#define	TFT_COLOR_GREEN   0x07E0
+#define TFT_COLOR_CYAN    0x07FF
+#define TFT_COLOR_MAGENTA 0xF81F
+#define TFT_COLOR_YELLOW  0xFFE0
+#define TFT_COLOR_WHITE   0xFFFF
+
+typedef struct{
+	SPI_HandleTypeDef * hSpi;
+	GPIO_TypeDef * csPort;
+	uint16_t csPin;
+	GPIO_TypeDef * dcPort;
+	uint16_t dcPin;
+	GPIO_TypeDef * resPort;
+	uint16_t resPin;
+} tft_t;
+
+uint8_t tftInit(tft_t * tft, SPI_HandleTypeDef * hSpi,
+		GPIO_TypeDef * csPort, uint16_t csPin,
+		GPIO_TypeDef * dcPort, uint16_t dcPin,
+		GPIO_TypeDef * resPort, uint16_t resPin);
+
+void tftSetAddressWindow(tft_t * tft, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
+void tftDrawPixel(tft_t * tft, uint8_t x, uint8_t y, uint16_t color);
+void tftWriteChar(tft_t * tft, uint8_t x, uint8_t y, char ch, FontDef font, uint16_t color, uint16_t bgcolor);
+void tftWriteString(tft_t * tft, uint16_t x, uint16_t y, const char* str, FontDef font, uint16_t color, uint16_t bgcolor);
+void tftFillRectangle(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void tftFillScreen(tft_t * tft, uint16_t color);
+void tftDrawImage(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data);
+// solo para pruebas
+//void tftSendCommand(tft_t * tft, uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes);
+void receiveParams(tft_t * tft, uint8_t commandByte, uint8_t *dataBytes, uint8_t numDataBytes);
+
+// DMA
+void tftDrawImageDMA(tft_t * tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t *data);
+void tftUnselect(tft_t * tft);
 
 #endif /* DRIVERS_SCREENDRV_H_ */

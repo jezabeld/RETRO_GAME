@@ -6,7 +6,7 @@
  */
 
 #include "EventDispatcher.h"
-#include "events.h"
+#include "synchronization.h"
 #include <stdbool.h>
 #include "BootMng.h" // aca esta el define de TEST_MODE
 
@@ -15,9 +15,10 @@
 #include "FlowAssert.h"
 bool traceEnabled = true;
 #else
-bool traceEnabled = false;
+bool traceEnabled = true;
 #endif
 
+volatile UBaseType_t uxStackEvntDispTask;
 static void routeEvent(event_id_t event);
 
 void EventDispatcherTask(void *pvParameters) {
@@ -26,6 +27,7 @@ void EventDispatcherTask(void *pvParameters) {
 	// loop
     for (;;)
     {
+    	uxStackEvntDispTask = uxTaskGetStackHighWaterMark(NULL);
         // Esperar eventos en qEvents
         if (xQueueReceive(qEvents, &receivedEvent, portMAX_DELAY) == pdTRUE) {
             // Si trace está activado, reenviar evento a LogSink
@@ -46,6 +48,14 @@ void EventDispatcherTask(void *pvParameters) {
 
 static void routeEvent(event_id_t event) {
     switch (event) {
+		case INP_BTN_A:
+		case INP_BTN_B:
+		case INP_BTN_C:
+		case INP_BTN_D:
+			// Eventos ya debouncados desde InputDrv → directamente a UI
+			xQueueSend(qUiCtrl, &event, 0);
+			break;
+
     	case DBG_TRACE_ON:
     		traceEnabled = true;
     		break;
@@ -91,6 +101,14 @@ static void routeEvent(event_id_t event) {
         case RES_ASSET_READY:
         case RES_ASSET_ERR:
 //            xQueueSend(qResLoad, &event, 0);
+            break;
+            
+        // Audio Player Events -> qAudio
+        case AUP_BEEP_1:
+        case AUP_BEEP_2:
+        case AUP_BEEP_3:
+        case AUP_BEEP_4:
+            xQueueSend(qAudio, &event, 0);
             break;
             
         default:

@@ -11,9 +11,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef void (*timer_cb_t)(void);
-
-int timerInitLvgl(void);
-int timerRegister(timer_cb_t cb, uint32_t period_ms);
+uint8_t timerInit(void);
 
 #endif /* DRIVERS_TIMERDRV_H_ */
