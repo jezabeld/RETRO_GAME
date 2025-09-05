@@ -62,6 +62,13 @@ QueueHandle_t qGame;
 //QueueHandle_t qRender;
 QueueHandle_t qInHand;
 
+#define DEBOUNCE_TIME_MS 50
+
+TimerHandle_t tBtnAdebounce;
+TimerHandle_t tBtnBdebounce;
+TimerHandle_t tBtnCdebounce;
+TimerHandle_t tBtnDdebounce;
+
 void bootInit(void)
 {
 	/* ===== INICIALIZAR DRIVERS ===== */
@@ -78,7 +85,7 @@ void bootInit(void)
 	input_hw_cfg_t inputConfig = {.buttonCount = 4, .joystickChannels = 2};
 	inputInit(&inputConfig);
 	
-	timerInitLvgl();
+	timerInit();
 	uartSendString("BootMng: Drivers inicializados\r\n");
 
     BaseType_t ret;
@@ -141,6 +148,12 @@ void bootInit(void)
 
     ret = xTaskCreate(LogSinkTask, "LogSink", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &tskLogSink);
     configASSERT(pdPASS == ret);
+
+    uartSendString("BootMng: creando timers\r\n");
+    tBtnAdebounce = xTimerCreate("Timer btn A", pdMS_TO_TICKS(DEBOUNCE_TIME_MS), pdFALSE, (void *) 1, btnAtimerCallback);
+    tBtnBdebounce = xTimerCreate("Timer btn B", pdMS_TO_TICKS(DEBOUNCE_TIME_MS), pdFALSE, (void *) 2, btnBtimerCallback);
+    tBtnCdebounce = xTimerCreate("Timer btn C", pdMS_TO_TICKS(DEBOUNCE_TIME_MS), pdFALSE, (void *) 3, btnCtimerCallback);
+    tBtnDdebounce = xTimerCreate("Timer btn D", pdMS_TO_TICKS(DEBOUNCE_TIME_MS), pdFALSE, (void *) 4, btnDtimerCallback);
 
     uartSendString("BootMng: inicializacion de colas y tareas completada\r\n");
     

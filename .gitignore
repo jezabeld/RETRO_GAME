@@ -1,0 +1,66 @@
+#########################
+# STM32CubeIDE Build Files
+#########################
+
+# Build output directories
+*/Debug/*
+*/Release/
+*.metadata/
+
+# CubeIDE configuration files
+.settings/
+
+# Intermediate files
+*.o
+*.d
+*.lst
+*.su
+*.bin
+*.hex
+*.map
+*.elf
+*.out
+*.srec
+*.cyclo
+*.list
+
+# Libraries and auto-generated files
+#*/Drivers/CMSIS/
+#*/Drivers/STM32*/
+#*/Middlewares/
+#*/Core/Startup/
+
+# Backup files
+*.bak
+*.swp
+*.swo
+
+# CubeMX-generated files
+#*.ioc
+
+# Other IDE specific files
+# *.launch
+#*.cproject
+#*.project
+#*.mxproject
+
+# Ignore any other auto-generated folders 
+#/Inc/
+#/Src/
+
+#########################
+# Other Files
+#########################
+
+# VSCode settings
+.vscode/
+
+# General OS files
+.DS_Store
+Thumbs.db
+
+# Editor temporary files
+*~
+*.tmp
+
+

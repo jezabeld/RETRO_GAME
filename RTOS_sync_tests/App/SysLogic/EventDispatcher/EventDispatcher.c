@@ -15,7 +15,7 @@
 #include "FlowAssert.h"
 bool traceEnabled = true;
 #else
-bool traceEnabled = false;
+bool traceEnabled = true;
 #endif
 
 static void routeEvent(event_id_t event);

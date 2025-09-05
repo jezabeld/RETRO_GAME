@@ -10,10 +10,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "cmsis_os.h"
 
-typedef void (*timer_cb_t)(void);
-
-int timerInitLvgl(void);
-int timerRegister(timer_cb_t cb, uint32_t period_ms);
+uint8_t timerInit(void);
+void btnAtimerCallback(TimerHandle_t hTimer);
+void btnBtimerCallback(TimerHandle_t hTimer);
+void btnCtimerCallback(TimerHandle_t hTimer);
+void btnDtimerCallback(TimerHandle_t hTimer);
 
 #endif /* DRIVERS_TIMERDRV_H_ */

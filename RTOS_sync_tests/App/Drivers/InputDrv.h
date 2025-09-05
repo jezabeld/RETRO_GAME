@@ -18,4 +18,8 @@ typedef struct {
 
 int inputInit(const input_hw_cfg_t *cfg);
 
+void EXTI_DisableLine(uint32_t line_bit);
+void EXTI_EnableLine (uint32_t line_bit);
+void EXTI_ClearPending(uint32_t line_bit);
+
 #endif /* DRIVERS_INPUTDRV_H_ */

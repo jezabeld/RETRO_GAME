@@ -76,6 +76,11 @@ enum {
     RES_ASSET_READY = 30,
     RES_ASSET_ERR,
 
+    RAW_BTN_A = 40,
+    RAW_BTN_B,
+    RAW_BTN_C,
+    RAW_BTN_D,
+
 /* ======================
  * Drivers: TFT_, AUD_, HAP_, DBG_, INP_, MEM_, TIM_
  * ====================== */

@@ -60,7 +60,7 @@ osThreadId defaultTaskHandle;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-//static void MX_USART2_UART_Init(void);
+static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 void StartDefaultTask(void const * argument);
@@ -104,7 +104,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-//  MX_USART2_UART_Init();
+  MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
@@ -306,33 +306,33 @@ static void MX_SPI1_Init(void)
   * @param None
   * @retval None
   */
-//static void MX_USART2_UART_Init(void)
-//{
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
 //
-//  /* USER CODE BEGIN USART2_Init 0 */
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
 //
-//  /* USER CODE END USART2_Init 0 */
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
 //
-//  /* USER CODE BEGIN USART2_Init 1 */
-//
-//  /* USER CODE END USART2_Init 1 */
-//  huart2.Instance = USART2;
-//  huart2.Init.BaudRate = 115200;
-//  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-//  huart2.Init.StopBits = UART_STOPBITS_1;
-//  huart2.Init.Parity = UART_PARITY_NONE;
-//  huart2.Init.Mode = UART_MODE_TX_RX;
-//  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-//  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-//  if (HAL_UART_Init(&huart2) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /* USER CODE BEGIN USART2_Init 2 */
-//
-//  /* USER CODE END USART2_Init 2 */
-//
-//}
+  /* USER CODE END USART2_Init 2 */
+
+}
 
 /**
   * Enable DMA controller clock
@@ -393,8 +393,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : BTN_LEFT_Pin BTN_DOWN_Pin BTN_RIGHT_Pin BTN_UP_Pin */
-  GPIO_InitStruct.Pin = BTN_LEFT_Pin|BTN_DOWN_Pin|BTN_RIGHT_Pin|BTN_UP_Pin;
+  /*Configure GPIO pins : BTN_B_Pin BTN_A_Pin BTN_C_Pin BTN_D_Pin */
+  GPIO_InitStruct.Pin = BTN_B_Pin|BTN_A_Pin|BTN_C_Pin|BTN_D_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -458,6 +458,28 @@ void StartDefaultTask(void const * argument)
     osDelay(1);
   }
   /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM5 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM5)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
 }
 
 /**
