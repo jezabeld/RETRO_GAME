@@ -60,7 +60,7 @@
     #endif
 
 #else       /*LV_MEM_CUSTOM*/
-    #define LV_MEM_CUSTOM_INCLUDE "lv_rtos_port.h"   /*Header for the dynamic memory function*/
+    #define LV_MEM_CUSTOM_INCLUDE "lv_port_rtos.h"   /*Header for the dynamic memory function*/
     #define LV_MEM_CUSTOM_ALLOC   pvPortMalloc
     #define LV_MEM_CUSTOM_FREE    vPortFree
     #define LV_MEM_CUSTOM_REALLOC pvPortRealloc

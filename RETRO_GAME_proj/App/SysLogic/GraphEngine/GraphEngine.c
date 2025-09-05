@@ -35,7 +35,11 @@ void GraphEngineTask(void *pvParameters)
     // Esperar que UI esté lista
     uxStackGFXTask = uxTaskGetStackHighWaterMark(NULL);
     xSemaphoreTake(semUiReady, portMAX_DELAY);
-    // Fase 2: Loop principal LVGL
+    
+    // Fase 2: Loop principal LVGL con timing exacto
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(50); // 20 FPS exactos
+    
     for(;;)
     {
 #ifdef TEST_MODE
@@ -48,6 +52,6 @@ void GraphEngineTask(void *pvParameters)
 		lv_port_indev_clear_buttons(); /* clear button states after processing */
 
 		uxStackGFXTask = uxTaskGetStackHighWaterMark(NULL);
-        vTaskDelay(pdMS_TO_TICKS(10)); 
+        vTaskDelayUntil(&xLastWakeTime, xFrequency); // Timing exacto cada 50ms
     }
 }

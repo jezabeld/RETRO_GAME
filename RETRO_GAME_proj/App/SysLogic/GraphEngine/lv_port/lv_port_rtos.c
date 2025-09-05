@@ -1,12 +1,12 @@
 /*
- * lv_rtos_port.c
+ * lv_port_rtos.c
  *
  *  Created on: Aug 28, 2025
  *      Author: jez
  */
 
 #include <string.h>
-#include "lv_rtos_port.h"
+#include "lv_port_rtos.h"
 #include "lvgl.h"
 
 void vApplicationTickHook(void)

@@ -85,21 +85,25 @@ enum {
 /* ======================
  * Audio Player (AUP_)
  * ====================== */
-    AUP_BEEP_1 = 40,      // Beep simple corto (confirmación)
-    AUP_BEEP_2,      // Beep simple largo (error/alerta)
+    AUP_BEEP_1 = 40,      
+    AUP_BEEP_2,           
 
 /* ======================
  * Input crudos (RAW_)
  * ====================== */
-	RAW_BTN_A = 50,
-	RAW_BTN_B,
-	RAW_BTN_C,
-	RAW_BTN_D,
+	RAW_BTN_A_DOWN = 50,
+	RAW_BTN_B_DOWN,
+	RAW_BTN_C_DOWN,
+	RAW_BTN_D_DOWN,
+    RAW_BTN_A_UP,
+	RAW_BTN_B_UP,
+	RAW_BTN_C_UP,
+	RAW_BTN_D_UP,
 
 /* ======================
  * Input procesados (INP_)
  * ====================== */
-	INP_BTN_A = 55,
+	INP_BTN_A = 65,
 	INP_BTN_B,
 	INP_BTN_C,
 	INP_BTN_D,
@@ -107,20 +111,20 @@ enum {
 /* ======================
  * Drivers: TFT_, AUD_, HAP_, DBG_, INP_, MEM_, TIM_
  * ====================== */
-    TFT_OK = 80,
-    TFT_ERR,
-    AUD_OK,
-    AUD_ERR,
-    HAP_OK,
-    HAP_ERR,
-    DBG_OK,
-    DBG_ERR,
-    INP_OK,
-    INP_ERR,
-    MEM_OK,
-    MEM_ERR,
-    TIM_OK,
-    TIM_ERR,
+    // TFT_OK = 80,
+    // TFT_ERR,
+    // AUD_OK,
+    // AUD_ERR,
+    // HAP_OK,
+    // HAP_ERR,
+    // DBG_OK,
+    // DBG_ERR,
+    // INP_OK,
+    // INP_ERR,
+    // MEM_OK,
+    // MEM_ERR,
+    // TIM_OK,
+    // TIM_ERR,
 
 /* ======================
  * Debug (DBG_)

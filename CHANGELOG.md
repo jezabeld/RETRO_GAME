@@ -21,11 +21,16 @@
   - `map12_to_duty` → `mapToDuty`
 - **Files Modified**: `AudioDrv.c/h`, `BootMng.c`
 
-#### ✅ Button Nomenclature Update
-- **Problem**: Directional button names (UP/DOWN/LEFT/RIGHT) not matching actual hardware layout
-- **Solution**: Updated to generic button naming convention
-  - BTN_UP → BTN_D, BTN_DOWN → BTN_A, BTN_LEFT → BTN_B, BTN_RIGHT → BTN_C
-- **Files Modified**: `RETRO_GAME_proj.ioc`, `main.c/h`, GPIO pin labels
+#### ✅ Button Input System Implementation
+- **Hardware Setup**: Updated button nomenclature and GPIO configuration
+  - Changed from directional names to generic: BTN_UP → BTN_D, BTN_DOWN → BTN_A, BTN_LEFT → BTN_B, BTN_RIGHT → BTN_C
+  - Configured GPIO EXTI interrupts for 4 buttons (PC0-PC3)
+- **Software Implementation**: IRQ-based input detection with event routing
+  - FreeRTOS software timers created for future debounce implementation
+  - Event routing through EventDispatcher to UIController working correctly
+  - UART debug traces for interrupt verification
+- **Current Status**: Button detection functional, debounce logic pending completion
+- **Files Modified**: `RETRO_GAME_proj.ioc`, `main.c/h`, `InputDrv.c/h`
 
 #### ✅ TFT Display Initialization Fix
 - **Problem**: `tftInit()` hanging during boot due to `HAL_Delay()` calls before FreeRTOS scheduler start
@@ -39,13 +44,16 @@
 - **Files Modified**: `ScreenDrv.c`
 
 #### ✅ LVGL Graphics Library Integration
-- **Problem**: Complex initialization sequence and memory management issues
-- **Solution**: Implemented robust task synchronization and memory optimization
+- **Achievement**: Complete graphics system implementation with LVGL library
+- **Implementation**: Robust task synchronization and memory optimization
   - Created binary semaphores for GraphEngine ↔ UIController coordination
   - Two-phase initialization: LVGL setup → UI creation → main loop
   - Integrated LVGL with FreeRTOS memory management (custom realloc implementation)
   - LVGL timer now uses FreeRTOS tick hook instead of independent timing
-- **Files Modified**: `GraphEngine.c`, `UIController.c`, `synchronization.h` (renamed from `events.h`)
+  - **Critical**: `configUSE_TICK_HOOK 1` required for LVGL operation - enables `lv_tick_inc()` and internal timer processing
+  - Created custom RTOS porting layer for LVGL-FreeRTOS integration
+- **Files Added**: `lv_port_rtos.c/h` (FreeRTOS tick hook implementation)
+- **Files Modified**: `GraphEngine.c`, `UIController.c`, `synchronization.h` (renamed from `events.h`), `FreeRTOSConfig.h`
 
 #### ✅ FreeRTOS Memory Optimization
 - **Problem**: Heap corruption and stack overflow issues with 128KB RAM constraint
@@ -80,25 +88,17 @@
 - **Files Added**: `synchronization.h`
 - **Files Modified**: `GraphEngine.c`, `UIController.c`, `BootMng.c`
 
-#### ✅ Thread-Safe ISR Implementation
-- **Problem**: GPIO interrupts causing ADC_DMAError and system corruption
-- **Solution**: Converted ISR functions to use FreeRTOS FromISR versions
-  ```c
-  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  xQueueSendFromISR(qEvents, &inpEvent, &xHigherPriorityTaskWoken);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-  ```
-- **Files Modified**: `InputDrv.c`
-
 ### Current System Status
 
 #### ✅ Working Features
-- **Graphics System**: LVGL UI rendering with DMA-accelerated display driver
-- **Input System**: 4 buttons (A/B/C/D) + 2-axis analog joystick working correctly
-- **UI Navigation**: Menu system fully functional with button A as START
+- **Graphics System**: LVGL UI rendering with DMA-accelerated display driver and FreeRTOS integration
+- **Input System**: 4 buttons (A/B/C/D) with IRQ-based detection + 2-axis analog joystick working correctly
+- **UI Navigation**: Menu system fully functional with button and joystick input
 - **Memory Management**: Stable operation with optimized heap and stack allocation
-- **Task Coordination**: Proper synchronization between all system components
+- **Task Coordination**: Proper synchronization between all system components with event routing
 - **Audio Infrastructure**: PWM-based audio driver ready for implementation
+- **Event System**: Event dispatcher routing input events to UI controller
+- **FreeRTOS Integration**: Timer deamon task configured for freeRTOS software timers.
 
 #### 📝 Known Minor Issues
 - Brief display of previous screen content before splash screen (cosmetic)

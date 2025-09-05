@@ -73,7 +73,6 @@
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION  1
 /* USER CODE BEGIN MESSAGE_BUFFER_LENGTH_TYPE */
 #define configUSE_TRACE_FACILITY        1
-#define INCLUDE_uxTaskGetStackHighWaterMark    1
 
 /* Defaults to size_t for backward compatibility, but can be changed
    if lengths will always be less than the number of bytes in a size_t. */
@@ -84,6 +83,12 @@
 #define configUSE_CO_ROUTINES                    0
 #define configMAX_CO_ROUTINE_PRIORITIES          ( 2 )
 
+/* Software timer definitions. */
+#define configUSE_TIMERS                         1
+#define configTIMER_TASK_PRIORITY                ( 6 )
+#define configTIMER_QUEUE_LENGTH                 5
+#define configTIMER_TASK_STACK_DEPTH             128
+
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
 #define INCLUDE_vTaskPrioritySet             1
@@ -91,9 +96,10 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelete                  1
 #define INCLUDE_vTaskCleanUpResources        0
 #define INCLUDE_vTaskSuspend                 1
-#define INCLUDE_vTaskDelayUntil              0
+#define INCLUDE_vTaskDelayUntil              1
 #define INCLUDE_vTaskDelay                   1
 #define INCLUDE_xTaskGetSchedulerState       1
+#define INCLUDE_uxTaskGetStackHighWaterMark  1
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS
