@@ -49,15 +49,35 @@ void UIControllerTask(void *pvParameters)
                 // Botones
 				case INP_BTN_A:
 					lv_port_indev_btn_a_pressed();
+					// Enviar evento de sonido para botón A
+					{
+						event_id_t audioEvent = AUP_BEEP_1;
+						xQueueSend(qEvents, &audioEvent, 0);
+					}
 					break;
 				case INP_BTN_B:
 					lv_port_indev_btn_b_pressed();
+					// Enviar evento de sonido para botón B
+					{
+						event_id_t audioEvent = AUP_BEEP_2;
+						xQueueSend(qEvents, &audioEvent, 0);
+					}
 					break;
 				case INP_BTN_C:
 					lv_port_indev_btn_c_pressed();
+					// Enviar evento de sonido para botón C
+					{
+						event_id_t audioEvent = AUP_BEEP_3;
+						xQueueSend(qEvents, &audioEvent, 0);
+					}
 					break;
 				case INP_BTN_D:
 					lv_port_indev_btn_d_pressed();
+					// Enviar evento de sonido para botón D
+					{
+						event_id_t audioEvent = AUP_BEEP_4;
+						xQueueSend(qEvents, &audioEvent, 0);
+					}
 					break;
 
                 default:

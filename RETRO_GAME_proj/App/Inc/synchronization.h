@@ -86,7 +86,9 @@ enum {
  * Audio Player (AUP_)
  * ====================== */
     AUP_BEEP_1 = 40,      
-    AUP_BEEP_2,           
+    AUP_BEEP_2,
+    AUP_BEEP_3,
+    AUP_BEEP_4,           
 
 /* ======================
  * Input crudos (RAW_)

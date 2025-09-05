@@ -106,6 +106,8 @@ static void routeEvent(event_id_t event) {
         // Audio Player Events -> qAudio
         case AUP_BEEP_1:
         case AUP_BEEP_2:
+        case AUP_BEEP_3:
+        case AUP_BEEP_4:
             xQueueSend(qAudio, &event, 0);
             break;
             

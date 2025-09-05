@@ -28,25 +28,44 @@
 #define AUDIO_DMA_BLOCK  64u
 #endif
 
-/* Callback: llená 'dst' con N muestras 12-bit (0..4095, centro=2048) */
+#define AUDIO_SAMPLE_MAX     4095u   /* 12-bit samples (mapped to PWM levels) */
+#define AUDIO_SAMPLE_CENTER  2048u   /* Sample center value (50% duty) */
+
+/* Callback: llená 'dst' con N muestras 12-bit (0..4095, centro=2048)
+ * NOTA: PWM real solo tiene niveles limitados, pero se usa 12-bit para
+ * compatibilidad futura con DAC y simplicidad del AudioPlayer */
 typedef void (*audioPwmFill12Fn)(uint16_t* dst, uint32_t n);
 
-/* Init del driver. fs_hz = TIM6 real (ej: 10000). TIM3 debe estar ya en PWM. */
-void audioInit(uint32_t fs_hz);
+/* Configuración del driver de audio PWM */
+typedef struct {
+    TIM_HandleTypeDef  *pwm_timer;     /* Timer PWM (ej: TIM3) */
+    uint32_t           pwm_channel;    /* Canal PWM (ej: TIM_CHANNEL_3) */
+    uint32_t           pwm_arr;        /* ARR del timer PWM */
+    
+    TIM_HandleTypeDef  *fs_timer;      /* Timer de frecuencia de muestreo (ej: TIM6) */
+    DMA_HandleTypeDef  *dma_handle;    /* DMA para transferir samples */
+    uint32_t           fs_hz;          /* Frecuencia de muestreo */
+    
+    volatile uint16_t  pwm_buffer[2 * AUDIO_DMA_BLOCK];  /* Buffer PWM (ping-pong) */
+    audioPwmFill12Fn   fill_callback;  /* Callback para generar samples */
+} audioDrv_t;
 
-/* Arranca PWM + DMA (circular) usando TIM6_UP -> TIM3->CCR3 */
-void audioStart(void);
+
+/* Inicializa el driver de audio PWM */
+uint8_t audioInit(audioDrv_t *audio, TIM_HandleTypeDef *pwm_tim, uint32_t pwm_ch, 
+                  TIM_HandleTypeDef *fs_tim, DMA_HandleTypeDef *dma, 
+                  uint32_t fs_hz);
+
+/* Arranca PWM + DMA circular */
+void audioStart(audioDrv_t *audio);
 
 /* Detiene limpio (CCR a 50%) */
-void audioStop(void);
+void audioStop(audioDrv_t *audio);
 
-/* Registra la función de llenado (se llama en half/full) */
-void audioSetFill12Fn(audioPwmFill12Fn fn);
+/* Registra la función de llenado */
+void audioSetFillFn(audioDrv_t *audio, audioPwmFill12Fn fn);
 
-/* Actualiza ARR de TIM3 si lo cambiás en runtime (carrier) */
-void audioSetPwmARR(uint32_t arr);
-
-/* Lee fs actual (para el player) */
-uint32_t audioGetFs(void);
+/* Lee frecuencia de muestreo */
+uint32_t audioGetFs(audioDrv_t *audio);
 
 #endif /* DRIVERS_AUDIODRV_H_ */
