@@ -33,8 +33,7 @@ void ui_event_btniniciar( lv_event_t * e) {
         uint32_t key = lv_event_get_key(e);
         if (key == LV_KEY_ENTER) {
             /* Button A pressed while this button is focused */
-            /* TODO: Implement startNewGame logic */
-            // startNewGame( e );
+            startNewGame( e );
             /* Provisional: Switch to SYSPAUSED screen for testing */
             _ui_screen_change(&ui_SYSPAUSED, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, ui_SYSPAUSED_screen_init);
         }
@@ -48,8 +47,7 @@ void ui_event_btnontinuar( lv_event_t * e) {
         uint32_t key = lv_event_get_key(e);
         if (key == LV_KEY_ENTER) {
             /* Button A pressed while this button is focused */
-            /* TODO: Implement continueSavedGame logic */
-            // continueSavedGame( e );
+            continueSavedGame( e );
             /* Provisional: Switch to SYSPAUSED screen for testing */
             _ui_screen_change(&ui_SYSPAUSED, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, ui_SYSPAUSED_screen_init);
         }

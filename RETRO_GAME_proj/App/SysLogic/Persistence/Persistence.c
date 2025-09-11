@@ -25,7 +25,7 @@ void PersistenceTask(void *pvParameters)
                     vTaskDelay(pdMS_TO_TICKS(100));
                     
                     // Simular que no hay partida guardada (según flujo del README)
-                    event_id_t responseEvent = CFG_NO_SAVE;
+                    event_id_t responseEvent = CFG_HAS_SAVE;//CFG_NO_SAVE;
                     xQueueSend(qEvents, &responseEvent, 0);
                     break;
                     
