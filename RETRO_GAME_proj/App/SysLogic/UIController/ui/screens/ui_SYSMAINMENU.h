@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 // SCREEN: ui_SYSMAINMENU
-extern void ui_SYSMAINMENU_screen_init(void);
+extern void ui_SYSMAINMENU_screen_init(uint8_t show_continue_button);
 extern void ui_SYSMAINMENU_screen_destroy(void);
 extern lv_obj_t *ui_SYSMAINMENU;
 extern lv_obj_t *ui_Title1;

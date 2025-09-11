@@ -17,6 +17,26 @@ extern TaskHandle_t tskGraph;
 
 volatile UBaseType_t uxStackUiTask;
 
+typedef enum { SAVE_UNKNOWN=0, SAVE_NONE, SAVE_PRESENT } save_state_t;
+
+static bool         want_show_menu = false;
+static bool         gfx_ready      = false;
+static save_state_t save_state     = SAVE_UNKNOWN;
+static bool         ui_inited      = false;
+
+// Función helper para inicializar UI si están listas ambas condiciones
+static void try_initialize_ui(void) {
+    if (!ui_inited && want_show_menu && gfx_ready && (save_state != SAVE_UNKNOWN)) {
+
+        // Inicializar el menú según el estado del save
+        ui_init(save_state == SAVE_PRESENT);
+        
+        // Señalizar que UI está lista
+        ui_inited = true;
+        xSemaphoreGive(semUiReady);
+    }
+}
+
 void UIControllerTask(void *pvParameters)
 {
     event_id_t receivedEvent;
@@ -28,23 +48,19 @@ void UIControllerTask(void *pvParameters)
             
             switch (receivedEvent) {
                 case CFG_HAS_SAVE:
-                    // Habilitar opción "Continuar" en menú
+                	save_state = SAVE_PRESENT;
+                    try_initialize_ui();
                     break;
                     
                 case CFG_NO_SAVE:
-                    // Deshabilitar opción "Continuar" en menú
+                	save_state = SAVE_NONE;
+                    try_initialize_ui();
                     break;
                     
                 case SE_SHOW_MENU:
-                	// Esperar que LVGL esté inicializado
-                	xSemaphoreTake(semGFXReady, portMAX_DELAY);
-                	
-                	// Inicializar el menú
-                	ui_init();
-                	
-                	// Señalizar que UI está lista
-                	xSemaphoreGive(semUiReady);
-                	break;
+                	want_show_menu = true;
+                    try_initialize_ui();
+                    break;
 
                 // Botones
 				case INP_BTN_A:
@@ -84,6 +100,12 @@ void UIControllerTask(void *pvParameters)
                     // Evento no manejado - silencioso
                     break;
             }
+            if (!gfx_ready) {
+				// Reviso el semaforo de GFX de forma no bloqueante
+				if (xSemaphoreTake(semGFXReady, 0) == pdTRUE) {
+					gfx_ready = true;
+				}
+			}
         } 
     }
 }

@@ -58,7 +58,7 @@ void ui_event_btnontinuar( lv_event_t * e) {
 
 // build funtions
 
-void ui_SYSMAINMENU_screen_init(void)
+void ui_SYSMAINMENU_screen_init(uint8_t show_continue_button)
 {
     ui_SYSMAINMENU = lv_obj_create(NULL);
     lv_obj_clear_flag( ui_SYSMAINMENU, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
@@ -96,14 +96,25 @@ void ui_SYSMAINMENU_screen_init(void)
     lv_obj_add_event_cb(ui_btniniciar, ui_event_btniniciar, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_btnontinuar, ui_event_btnontinuar, LV_EVENT_ALL, NULL);
 
-    /* Add buttons to input group for joystick navigation (in reverse visual order to fix UP/DOWN) */
+    /* Mostrar/ocultar botón "Continuar" según el parámetro */
+    if (show_continue_button) {
+        lv_obj_clear_flag(ui_btnontinuar, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(ui_btnontinuar, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    /* Add buttons to input group for joystick navigation */
     lv_group_t * input_group = lv_port_indev_get_group();
     if(input_group != NULL) {
         /* Clear any previous objects from the group */
         lv_group_remove_all_objs(input_group);
         
-        lv_group_add_obj(input_group, ui_btnontinuar);    /* Add "Continuar" button (bottom) first */
-        lv_group_add_obj(input_group, ui_btniniciar);     /* Add "Nuevo Juego" button (top) last */
+        if (show_continue_button) {
+            lv_group_add_obj(input_group, ui_btnontinuar);    /* "Continuar" (abajo) */
+            lv_group_add_obj(input_group, ui_btniniciar);     /* "Nuevo Juego" (arriba) */
+        } else {
+            lv_group_add_obj(input_group, ui_btniniciar);     /* Solo "Nuevo Juego" */
+        }
         /* Note: ui_Title1 (label) is intentionally NOT added to the group */
         
         /* Set initial focus on the first button (Nuevo Juego - top button) */
