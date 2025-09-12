@@ -21,6 +21,7 @@
 \usepackage[table,xcdraw]{xcolor}
 \usepackage[left=2.00cm,right=2.50cm,top=2.50cm,bottom=2.50cm]{geometry}
 \usepackage{hyperref}
+% \usepackage{plantuml}
 
 % ──────────────────────── Comandos útiles ────────────────────────
 \newcommand*{\autor}[1]{\def\authorname{#1}}
@@ -222,7 +223,7 @@ A continuación se presenta el listado de componentes por capa junto a una breve
 & \texttt{TimerDrv} & Driver de timers & Generación de interrupciones de tiempo \\
 \hline
 
-\textbf{Lógica del sistema} & \texttt{BootMgr} & Gestor de arranque & Inicializa drivers, crea tareas FreeRTOS, transfiere a menú principal \\
+\textbf{Lógica del sistema} & \texttt{BootMng} & Gestor de arranque & Inicializa drivers, crea tareas FreeRTOS, transfiere a menú principal \\
 \cline{2-4}
 & \texttt{ResLoader} & Cargador de recursos & Carga de recursos (imágenes, sonidos) en RAM desde memoria externa \\
 \cline{2-4}
@@ -344,7 +345,7 @@ gráfico; implementación de los estados internos del juego (\texttt{GME\_RUNNIN
 %-------------------------------------- Capa Sistema
 \subsection{Componentes de sistema }
 
-\subsubsection{\texttt{BootMgr} — Gestor de arranque}
+\subsubsection{\texttt{BootMng} — Gestor de arranque}
 \paragraph{Resumen:} Se ejecuta al inicio del sistema tras el bootloader. Se encarga de inicializar los servicios básicos, crear las tareas de FreeRTOS y mostrar la pantalla inicial (splash).
 \paragraph{Notas adicionales:}
 \begin{itemize}
@@ -465,16 +466,16 @@ gráfico; implementación de los estados internos del juego (\texttt{GME\_RUNNIN
 \paragraph{Notas adicionales:}
 \begin{itemize}
   \item Implementa una FSM propia independiente de \texttt{SysMng}.
-  \item Responsable de invocar a \texttt{UpdateEngine}, \texttt{RenderEngine} y servicios de salida.
-  \item Emite eventos como \texttt{PLAY\_SFX}, \texttt{VIBRATE\_HIT}, \texttt{EXIT\_TO\_MENU}.
+  \item Responsable de invocar a \texttt{UpdateEngine} y manda eventos a \texttt{RenderEngine}.
+  \item Emite eventos como \texttt{SE\_PAUSE\_REQ}.
   \item Debe poder congelar el juego sin perder el estado (ej. en pausa o guardado).
-  \item Genera gameModel que encapsule subt-structs: Player, World 
+  \item Genera gameModel que encapsule subt-structs: estado de la navegación y del escenario renderizado
   \begin{itemize}
-    \item Contiene todo lo que hace falta — cada frame — para actualizar la lógica y dibujar la escena
+    \item Contiene todo lo que hace falta (cada frame) para actualizar la lógica y dibujar la escena
     \item Lo que no puede calcularse del gameModel a partir de otras variables, es lo que se va a guardar en el snapshot
     \item 
   \end{itemize}
-  \item Genera gameSignal[]: vector / cola de “hechos relevantes”
+  \item Genera gameSignal[]: vector / cola de “hechos relevantes” (que requieran sonidos o vibracion)
   % \begin{itemize}
   %   \item Comparando estado actual vs. anterior:
   %   \item  Velocidad menor a stall_thr -> SIG\_STALL\_WARN
@@ -569,7 +570,10 @@ gráfico; implementación de los estados internos del juego (\texttt{GME\_RUNNIN
 % ---------- 5 Modelos dinámicos ----------
 \section{Modelos dinámicos}
 \subsection{Statecharts}
-\begin{figure}[htb]
+
+Máquina de estado del sistema con subestados de juego y pausa.
+
+\begin{figure}[h]
 \centering 
 \includegraphics[width=.85\textwidth]{../Figuras/statechart.pdf}
 \caption{Diagrama de estados del sistema.}
@@ -625,17 +629,66 @@ gráfico; implementación de los estados internos del juego (\texttt{GME\_RUNNIN
 % }
 % @enduml
 
-
+\newpage
 \subsection{Diagrama de secuencia 1 - Encendido hasta menú}
 % \begin{center}
 % %   \includegraphics[width=.9\linewidth]{Figuras/seq_boot_to_menu.pdf}
 % \end{center}
 Descripción narrativa de cada paso.
 
-\subsection{Diagrama de secuencia 2 - Pausa y opciones}
-% \begin{center}
-%   \includegraphics[width=.9\linewidth]{Figuras/seq_pause_menu.pdf}
-% \end{center}
+En la figura \ref{fig:diagBootMng} puede observarse la secuencia interna del Boot Manager. En la figura \ref{fig:diagInitMenu}
+
+\begin{figure}[h]
+\centering 
+\includegraphics[width=.85\textwidth]{../Figuras/zoom_bootmng_flow.pdf}
+\caption{Zoom secuencia interna del BootMng.}
+\label{fig:diagBootMng}
+\end{figure}
+
+% \begin{plantuml}
+% @startuml boot_init_subflow
+% actor  PowerOn
+% participant BootMng
+% participant ScreenDrv
+% collections "Resto Drivers" as DRV
+% queue qEvents
+% collections "Resto colas RTOS" as QRTOS
+% collections "Tareas RTOS" as TRTOS
+
+
+% PowerOn  -> BootMng : reset
+% BootMng -> BootMng : HAL_init(), \nSystemClock, \ninicializ. perifericos, 
+% BootMng  -> ScreenDrv : tftInit()+drawSplash()
+% BootMng  -> DRV : <DRV>Init()
+% BootMng  <- DRV: <DRV>_OK
+% BootMng  -> qEvents   : creation
+% BootMng  ->  QRTOS : creation
+% BootMng  -> TRTOS : creation
+
+% BootMng  -> qEvents   : CFG_FLAG_REQ
+% BootMng  -> qEvents   : SE_SYS_READY
+% BootMng  --> RTOS     : vTaskStartScheduler()
+% BootMng -> BootMng : return 0
+% @enduml
+
+% \end{plantuml}
+
+\begin{figure}[h!]
+\centering 
+\includegraphics[width=.85\textwidth]{../Figuras/init_menu_flow.pdf}
+\caption{Flow desde boot hasta menú inicio.}
+\label{fig:diagInitMenu}
+\end{figure}
+
+\newpage
+\subsection{Diagrama de secuencia 2 - Comenzar nuevo juego}
+
+\begin{figure}[h!]
+\centering 
+\includegraphics[width=.85\textwidth]{../Figuras/start_new_game_flow.pdf}
+\caption{Flow desde menú inicio hasta comenzar nuevo juego.}
+\label{fig:diagStartNew}
+\end{figure}
 
 % ---------- 6 Asignación a tareas y concurrencia ----------
 \section{Aspectos de sincronización y concurrencia}

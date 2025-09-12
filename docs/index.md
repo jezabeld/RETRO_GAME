@@ -28,4 +28,5 @@ Bienvenidos a la documentación técnica del proyecto. A continuación se listan
 #### Diseño Detallado (DD) 
 - [RETRO_GAME-DD.pdf (WIP)](./RETRO_GAME-DD/Danon_Jezabel-RETRO_GAME-DD.pdf)
 
-
+### Extras
+- [Datasheets](./datasheets/) 
