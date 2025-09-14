@@ -34,8 +34,8 @@ void ui_event_btniniciar( lv_event_t * e) {
         if (key == LV_KEY_ENTER) {
             /* Button A pressed while this button is focused */
             startNewGame( e );
-            /* Provisional: Switch to SYSPAUSED screen for testing */
-            _ui_screen_change(&ui_SYSPAUSED, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, ui_SYSPAUSED_screen_init);
+            /* Provisional: Switch to SYSPAUSED screen for testing - COMMENTED OUT */
+            // _ui_screen_change(&ui_SYSPAUSED, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, ui_SYSPAUSED_screen_init);
         }
     }
 }
@@ -48,8 +48,8 @@ void ui_event_btnontinuar( lv_event_t * e) {
         if (key == LV_KEY_ENTER) {
             /* Button A pressed while this button is focused */
             continueSavedGame( e );
-            /* Provisional: Switch to SYSPAUSED screen for testing */
-            _ui_screen_change(&ui_SYSPAUSED, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, ui_SYSPAUSED_screen_init);
+            /* Provisional: Switch to SYSPAUSED screen for testing - COMMENTED OUT */
+            // _ui_screen_change(&ui_SYSPAUSED, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, ui_SYSPAUSED_screen_init);
         }
     }
 }

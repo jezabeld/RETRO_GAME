@@ -70,7 +70,7 @@ QueueHandle_t qHaptic;
 QueueHandle_t qLog;
 QueueHandle_t qSystem;
 QueueHandle_t qGame;
-//QueueHandle_t qRender;
+QueueHandle_t qActions;
 QueueHandle_t qInHand;
 
 #define DEBOUNCE_TIME_MS 50
@@ -127,8 +127,9 @@ void bootInit(void)
     qLog      = xQueueCreate(2*QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qLog);
     qSystem   = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qSystem);
     qGame     = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qGame);
-    //qRender   = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qRender);
     qInHand   = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qInHand);
+
+    qActions   = xQueueCreate(QUEUE_SIZE, sizeof(gameAction_t));  configASSERT(qActions);
 
     /* Registro para depuración */
     vQueueAddToRegistry(qEvents,  "qEvents");
@@ -141,8 +142,8 @@ void bootInit(void)
     vQueueAddToRegistry(qLog,     "qLog");
     vQueueAddToRegistry(qGame,    "qGame");
     vQueueAddToRegistry(qResLoad, "qResLoad");
-    //vQueueAddToRegistry(qRender,  "qRender");
     vQueueAddToRegistry(qInHand,  "qInHand");
+    vQueueAddToRegistry(qActions,  "qActions");
 
     /* ===== CREACIÓN DE SEMÁFOROS ===== */
     semGFXReady = xSemaphoreCreateBinary();

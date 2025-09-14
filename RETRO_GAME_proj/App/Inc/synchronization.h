@@ -28,6 +28,7 @@ extern QueueHandle_t qLog;
 extern QueueHandle_t qSystem;
 extern QueueHandle_t qGame;
 extern QueueHandle_t qInHand;
+extern QueueHandle_t qActions;
 
 /* ======================
  * Semáforos de sincronización entre tareas
@@ -38,6 +39,9 @@ extern SemaphoreHandle_t semUiReady;           // UIController → GraphEngine
 /* ======================
  * Eventos del sistema
  * ====================== */
+
+void sendEvent(uint8_t ev);
+void sendEventQueue(uint8_t ev, QueueHandle_t queue);
 
 // tipo de dato para los eventos
 typedef uint8_t event_id_t; // tipo real para colas, estructuras, etc.
@@ -57,12 +61,17 @@ enum {
     SE_EXIT_GAME,          // UI: salir al menú principal
 	SE_SHOW_MENU,
 	SE_HIDE_MENU,
+	SE_UI_HIDDEN,
 
 /* ======================
  * Game Events (GE_)
  * ====================== */
-    GE_GAME_STARTED = 10,
+	GE_START_NEW_GAME = 10,
+    GE_GAME_STARTED,
+	GE_START_SAVED_GAME,
     GE_GAME_CONTINUED,
+    GE_LOAD_OK,         // Carga exitosa de juego guardado
+    GE_LOAD_ERR,        // Error en carga de juego guardado  
     GE_GAME_PAUSED,
     GE_GAME_RESUME,
     GE_GAME_EXIT,
@@ -137,12 +146,14 @@ enum {
 /* ======================
  * TEST_MODE
  * ====================== */
-#ifdef TEST_MODE
+//#ifdef TEST_MODE
 	SE_GFX_INIT = 120,     // GraphEngine: LVGL inicializado (solo para test)
 	SE_GFX_RUNNING,        // GraphEngine: indicador de actividad (solo para test)
-#endif
+	SE_UI_SUSPENDING,
+	SE_INH_ACTION_SENT,
+	SE_RDX_RENDER_SENT,
+	SE_GFX_GAME_MODE,
+//#endif
 };
-
-
 
 #endif /* INC_SYNCHRONIZATION_H_ */

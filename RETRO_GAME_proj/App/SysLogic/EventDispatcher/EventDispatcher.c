@@ -73,11 +73,12 @@ static void routeEvent(event_id_t event) {
             break;
             
         // Game Events -> qGame
-        case GE_GAME_STARTED:
-        case GE_GAME_CONTINUED:
-        case GE_GAME_PAUSED:
-        case GE_GAME_RESUME:
-        case GE_GAME_EXIT:
+        case GE_START_NEW_GAME:
+//        case GE_GAME_STARTED:
+//        case GE_GAME_CONTINUED:
+//        case GE_GAME_PAUSED:
+//        case GE_GAME_RESUME:
+//        case GE_GAME_EXIT:
             xQueueSend(qGame, &event, 0);
             break;
             
