@@ -62,15 +62,15 @@ static void handleButtonDebounce(btn_info_t* btn, const char* btn_name) {
 
       if (is_pressed) {
         btn->state = BTN_PRESSED;
-        uartSendString(btn_name);
-        uartSendString(" PRESSED\r\n");
+        // uartSendString(btn_name);
+        // uartSendString(" PRESSED\r\n");
         // Enviar evento de press confirmado
         xQueueSend(qEvents, &(btn->press_event), 0);
       } else {
         // Falsa alarma, botón no está presionado
         btn->state = BTN_IDLE;
-        uartSendString(btn_name);
-        uartSendString(" false alarm\r\n");
+        // uartSendString(btn_name);
+        // uartSendString(" false alarm\r\n");
       }
     }
     
@@ -80,11 +80,27 @@ static void handleButtonDebounce(btn_info_t* btn, const char* btn_name) {
     btn->state = BTN_IDLE;  // Reset para próximo press
 }
 
+uint8_t inputGetJoyAxis(uint8_t axis, joystick_t* joyPtr)
+{
+    // Verificaciones
+    if ((joyPtr == NULL) | (axis > 1)) {
+        return 1;  // Error
+    }
+    
+    if (axis == 0) {
+        joyPtr->jyX = joy_raw[0];  // X axis (PA1)
+    } else {  // axis == 1 (Y)
+        joyPtr->jyY = joy_raw[1];  // Y axis (PA0)
+    }
+    
+    return 0;
+}
+
 uint8_t inputInit()
 {
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)joy_raw, 2);
 
-    // Inicializar referencias a timers existentes (mantenemos compatibilidad)
+    // Inicializar referencias a timers 
     s_buttons[0].timer = tBtnAdebounce;  // BTN_A
     s_buttons[1].timer = tBtnBdebounce;  // BTN_B
     s_buttons[2].timer = tBtnCdebounce;  // BTN_C  

@@ -9,6 +9,7 @@
 #include "lv_port_indev.h"
 #include "lvgl.h"
 #include "main.h"
+#include "InputDrv.h"
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -36,7 +37,6 @@ static uint32_t joystick_get_key(void);
  **********************/
 lv_indev_t * indev_joystick;
 static lv_group_t * input_group = NULL;
-extern volatile uint16_t joy_raw[2]; /* From main.c: [0]=X, [1]=Y */
 
 static volatile bool btn_a_pressed = false;
 static volatile bool btn_b_pressed = false;
@@ -142,8 +142,16 @@ static uint32_t joystick_get_key(void)
     }
     else {
         /* Check joystick directions */
-        int16_t x_diff = (int16_t)joy_raw[0] - JOYSTICK_CENTER_X;
-        int16_t y_diff = (int16_t)joy_raw[1] - JOYSTICK_CENTER_Y;
+        joystick_t joy_data;
+        int16_t x_diff = 0;
+        int16_t y_diff = 0;
+        
+        if (inputGetJoyAxis(0, &joy_data) == 0) {  // X axis
+            x_diff = (int16_t)joy_data.jyX - (int16_t)JOYSTICK_CENTER_X;
+        }
+        if (inputGetJoyAxis(1, &joy_data) == 0) {  // Y axis
+            y_diff = (int16_t)joy_data.jyY - (int16_t)JOYSTICK_CENTER_Y;
+        }
         
         /* Determine primary direction (strongest movement) */
         if(abs(x_diff) > JOYSTICK_DEADZONE || abs(y_diff) > JOYSTICK_DEADZONE) {

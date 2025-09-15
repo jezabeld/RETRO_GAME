@@ -10,8 +10,7 @@
 #include "synchronization.h"
 #include "cmsis_os.h"
 #include "systemDefs.h"
-
-extern volatile uint16_t joy_raw[2]; /* [0]=PA1 X , [1]=PA0 Y */
+#include "InputDrv.h"
 
 /* Normalización helper: ADC 0..4095 -> -100..+100 */
 static int16_t norm_adc_to_100(uint16_t adc)
@@ -29,8 +28,16 @@ void InputHandlerTask(void *pvParameters)
     for(;;)
     {
     	// Leer HW
-		uint16_t adc_pitch = joy_raw[1];
-		uint16_t adc_roll  = joy_raw[2];
+		joystick_t joy_data;
+		uint16_t adc_pitch = 0;
+		uint16_t adc_roll = 0;
+		
+		if (inputGetJoyAxis(0, &joy_data) == 0) {  // X axis
+			adc_roll = joy_data.jyX;
+		}
+		if (inputGetJoyAxis(1, &joy_data) == 0) {  // Y axis
+			adc_pitch = joy_data.jyY;
+		}
 
 		uint8_t  pause_btn = /* btn PAUSE edge*/ 0;
 
