@@ -8,7 +8,7 @@
 #include "EventDispatcher.h"
 #include "synchronization.h"
 #include <stdbool.h>
-#include "BootMng.h" // aca esta el define de TEST_MODE
+#include "systemDefs.h" // aca esta el define de TEST_MODE
 
 // Variable global para control de trace
 #ifdef TEST_MODE

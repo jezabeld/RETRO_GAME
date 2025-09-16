@@ -12,6 +12,9 @@
 
 #define GFX_TICK_MS 50
 
+// Modo de test para desarrollo
+//#define TEST_MODE
+
 /* ==============================
  * Estados globales del sistema
  * ============================== */

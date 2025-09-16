@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 #include "cmsis_os.h"
-#include "BootMng.h"
+#include "systemDefs.h"
 
 /* ======================
  * Declaraciones externas de colas del sistema

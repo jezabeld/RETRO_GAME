@@ -10,6 +10,7 @@
 #include "synchronization.h"
 #include "ScreenDrv.h"
 #include "cmsis_os.h"
+#include "systemDefs.h"
 
 extern gameModel_t gameModel;
 extern event_id_t gameSignal[10];
@@ -44,8 +45,9 @@ void RenderEngineTask(void *pvParameters)
 
 		rf.has_ground_h = 1;
 		rf.ground_h_px  = map_pitch_to_ground_px(gameModel.pitch, TFT_HEIGHT);
-
+#ifdef TEST_MODE
 		sendEvent(SE_RDX_RENDER_SENT);
+#endif
 //        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

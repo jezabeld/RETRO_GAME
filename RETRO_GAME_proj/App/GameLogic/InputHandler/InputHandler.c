@@ -48,8 +48,9 @@ void InputHandlerTask(void *pvParameters)
 		};
 
 		(void)xQueueSend(qActions, &act, 0);
+#ifdef TEST_MODE
 		sendEvent(SE_INH_ACTION_SENT);
-
+#endif
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(GFX_TICK_MS)); // Timing exacto cada 50ms
     }
 }
