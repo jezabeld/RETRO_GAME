@@ -10,6 +10,7 @@
 #include "lvgl.h"
 #include "main.h"
 #include "InputDrv.h"
+#include "UARTDrv.h"
 #include <stdlib.h>
 #include <stdint.h>
 

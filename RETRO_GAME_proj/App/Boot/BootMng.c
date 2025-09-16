@@ -46,6 +46,9 @@ extern TIM_HandleTypeDef htim3;         // PWM timer para PB0
 extern TIM_HandleTypeDef htim6;         // Sample rate timer
 extern DMA_HandleTypeDef hdma_tim6_up;  // DMA para TIM6_UP
 extern SPI_HandleTypeDef hspi1;         // SPI para la pantalla
+extern ADC_HandleTypeDef hadc1;
+extern DMA_HandleTypeDef hdma_adc1;
+extern TIM_HandleTypeDef htim2;
 
 /* ===== Handlers de tareas ===== */
 TaskHandle_t tskEvntDisp;
@@ -107,7 +110,8 @@ void bootInit(void)
 	while (audioResult != 0){/*error*/};
 
 	hapticInit();
-	uint8_t inputResult = inputInit();
+    
+	uint8_t inputResult = inputInit(&hadc1, &hdma_adc1, &htim2);
 	while (inputResult != 0) {/*error*/};
 	
 	uint8_t timerResult = timerInit();
