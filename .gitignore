@@ -63,4 +63,6 @@ Thumbs.db
 *~
 *.tmp
 
-
+# Other temp files
+.templates/
+build/

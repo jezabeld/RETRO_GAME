@@ -1,0 +1,84 @@
+# Clang-Format Style for STM32 + Personal Preferences
+# Combines WebKit-based style with STM32CubeIDE conventions
+
+BasedOnStyle: WebKit
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+
+# Line length
+ColumnLimit: 120
+
+# Braces
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+
+# Spacing
+SpaceAfterCStyleCast: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceAfterTemplateKeyword: true
+
+# Alignment  
+AlignTrailingComments: true
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignAfterOpenBracket: Align
+AlignOperands: true
+
+# Breaking
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+BreakStringLiterals: true
+
+# Comments (preserve STM32 style headers)
+ReflowComments: false
+FixNamespaceComments: true
+
+# Includes (maintain STM32 include organization)
+SortIncludes: false
+IncludeBlocks: Preserve
+
+# Pointers and References
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# Function formatting
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackParameters: true
+BinPackArguments: true
+
+# Array and initializer formatting
+AllowShortCaseLabelsOnASingleLine: true
+Cpp11BracedListStyle: false
+
+# Penalties to control formatting decisions
+PenaltyBreakBeforeFirstCallParameter: 1000
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 200
+
+# Macros (common in STM32 code)
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+
+# Keep empty lines for STM32 structure
+MaxEmptyLinesToKeep: 2
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# STM32 specific - don't format comments with special markers
+CommentPragmas: '^ (USER CODE|Private|Public)'
