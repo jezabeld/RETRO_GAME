@@ -4,7 +4,7 @@
 
 ## Project Information
 - **Project**: RETRO_GAME_proj
-- **Current Version**: v0.2 (Beta)
+- **Current Version**: v0.3 (Beta)
 - **Date**: September 2025
 - **Board**: STM32 Nucleo-F446RE
 - **IDE**: STM32CubeIDE 6.14.0
@@ -54,8 +54,10 @@
 
 **DMA Configuration:**
 - **DMA**: DMA2_Stream0, High Priority, Circular Mode
-- **Mode**: Continuous Conversion, 2 Channels
+- **Trigger**: TIM2_TRGO (Timer 2 Trigger Output)
+- **Sample Rate**: 1 kHz (X,Y interleaved = 500Hz per channel)
 - **Data Format**: 16-bit values, DMA Continuous Requests enabled
+- **Buffer**: 40 half-words (20ms @1kHz, 2 channels)
 
 ### GPIO - Digital Inputs (Buttons)
 | Pin | Function | Configuration |
@@ -70,6 +72,16 @@
 - All button interrupts configured with Priority 5
 - FreeRTOS compatible interrupt priorities (5-15 range)
 - FreeRTOS software timers for debounce implementation
+
+### TIM2 - ADC Trigger Timer
+| Timer | Function | Configuration |
+|-------|----------|---------------|
+| TIM2 | ADC1 Trigger | 1 kHz Update Rate, TRGO on Update Event |
+
+**Timer Configuration:**
+- **Frequency**: 1 kHz (1ms period)
+- **Mode**: Internal clock, no output channels
+- **Trigger Output**: Update Event → ADC1 External Trigger
 
 ### TIM3/TIM6 - PWM Audio Output
 | Pin | Timer | Channel | Function | Configuration |
@@ -130,16 +142,16 @@
 - **AudioDrv**: PWM-based audio driver with DMA circular buffer streaming
 - **AudioPlayer**: High-level audio system with sound effects and waveform generation
 - **AudioPlayerTask**: FreeRTOS task for audio event processing with beep sound library
-- **InputDrv**: GPIO interrupt-based input system with FreeRTOS timer integration
+- **InputDrv**: 4-button input with GPIO EXTI interrupts and FreeRTOS software timer debouncing + DMA joystick sampling with filtering and directional events
 - **ScreenDrv**: ST7735 TFT display driver 
+- **SystemManager**: State machine with events and minimum logic implemented
+- **GameManager**: State machine with events and minimum logic implemented
+- **RenderEngine**: Minimum logic implemented
+- **InputHandler**: Minimum logic implemented
 - **Flow Testing Framework**: Automated event sequence validation for system testing (TEST_MODE)
 
 #### 🚧 **Template/Placeholder Components** 
 *Framework ready, core logic pending*
-- **SystemManager**: State machine framework, minimal logic implemented for startup.
-- **GameManager**: Task framework ready, game logic implementation pending  
-- **RenderEngine**: Basic task, rendering pipeline not implemented
-- **InputHandler**: Task created, input processing logic placeholder
 - **Persistence**: Task framework, save/load functionality placeholder
 - **Hardware Drivers**: Template drivers (AccelDrv, EEPROMDrv, HapticDrv, TimerDrv) with basic init functions
 
@@ -154,6 +166,24 @@
 - **Toolchain**: STM32CubeIDE (GCC ARM)
 - **HAL Version**: STM32Cube FW_F4 V1.28.1
 - **Debug**: SWD Interface, 2 Wait States Flash
+
+---
+
+## Changes Added in v0.3 (Beta)
+
+### InputDrv Implementation
+- **Button debounce system**: 4-button input with GPIO EXTI interrupts and FreeRTOS software timer debouncing
+- **Analog joystick processing**: ADC1 dual-channel continuous conversion with DMA2_Stream0 circular buffer + TIM2 triggers ADC conversions at 1kHz for X/Y interleaved data acquisition
+- **Joystick filtering**: Block averaging of ADC samples for improved signal quality + Exponential Moving Average (EMA) filter (α≈0.72) for noise reduction
+- **Dual-frequency joystick data publication**: Position data updated at 100Hz, directional events generated at 50Hz
+
+### UI Flow 
+- **Menu fade transition**: Implemented fade-out logic from main menu to game mode
+- **Game simulation**: Placeholder game screens and simplified game loop for testing UI transitions (InputHandler, GameManager, RenderEngine)
+
+## Debug modes
+- **DEBUG_MODE**: multiple options for different debug levels during development
+- **RTOS time stats**: Implemented FreeRTOS trace and stats capabilities for better understanding of task's stack heap and % run time
 
 ---
 
