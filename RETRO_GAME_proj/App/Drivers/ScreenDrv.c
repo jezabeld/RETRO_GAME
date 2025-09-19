@@ -505,14 +505,17 @@ void tftDrawImageDMA(tft_t *tft, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
     // Note: CS pin must be released in DMA completion callback
 }
 
+#ifdef USE_DMA_CB
 /**
  * @brief DMA Transfer Complete Callback (when USE_DMA_CB is defined)
  * @param hspi Pointer to SPI handle that completed the transfer
  * @note Overrides weak HAL implementation to release CS pin
+ * @warning A global variable `tft_t tft` must be declared and initialized to use with this callback.
  */
-#ifdef USE_DMA_CB
+
+extern tft_t tft;
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
-    tftUnselect(tft); // Release CS pin after DMA transfer
+    tftUnselect(&tft); // Release CS pin after DMA transfer
 }
 #endif
 

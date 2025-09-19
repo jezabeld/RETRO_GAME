@@ -27,9 +27,9 @@
  * character dimensions and pointer to bitmap data.
  */
 typedef struct {
-    const uint8_t width;     ///< Character width in pixels
-    uint8_t height;          ///< Character height in pixels
-    const uint16_t *data;    ///< Pointer to bitmap font data array
+    const uint8_t width;  ///< Character width in pixels
+    uint8_t height;       ///< Character height in pixels
+    const uint16_t *data; ///< Pointer to bitmap font data array
 } FontDef;
 
 /* === Public variable declarations ============================================================ */
