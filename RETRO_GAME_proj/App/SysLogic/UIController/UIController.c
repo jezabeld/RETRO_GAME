@@ -97,6 +97,20 @@ void UIControllerTask(void *pvParameters)
 					sendEvent(AUP_BEEP_4);
 					break;
 
+                // Joystick direccional
+				case INP_JY_UP:
+					lv_port_indev_joy_up_pressed();
+					break;
+				case INP_JY_DOWN:
+					lv_port_indev_joy_down_pressed();
+					break;
+				case INP_JY_LEFT:
+					lv_port_indev_joy_left_pressed();
+					break;
+				case INP_JY_RIGHT:
+					lv_port_indev_joy_right_pressed();
+					break;
+
                 default:
                     // Evento no manejado - silencioso
                     break;

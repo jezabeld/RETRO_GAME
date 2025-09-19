@@ -17,10 +17,6 @@
 /*********************
  *      DEFINES
  *********************/
-#define JOYSTICK_CENTER_X   2048    /* 12-bit ADC center value */
-#define JOYSTICK_CENTER_Y   2048    /* 12-bit ADC center value */
-#define JOYSTICK_DEADZONE   800     /* Dead zone around center */
-#define JOYSTICK_DEBOUNCE_TIME 200  /* Debounce time in ms */
 
 /**********************
  *      TYPEDEFS
@@ -29,9 +25,9 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void joystick_init(void);
-static void joystick_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
-static uint32_t joystick_get_key(void);
+static void navigation_input_init(void);
+static void navigation_input_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
+static uint32_t get_navigation_key(void);
 
 /**********************
  *  STATIC VARIABLES
@@ -45,8 +41,10 @@ static volatile bool btn_c_pressed = false;
 static volatile bool btn_d_pressed = false;
 
 /* Joystick direction state variables */
-static volatile uint32_t last_key_time = 0;
-static volatile uint32_t last_key = 0;
+static volatile bool joy_up_pressed = false;
+static volatile bool joy_down_pressed = false;
+static volatile bool joy_left_pressed = false;
+static volatile bool joy_right_pressed = false;
 
 /**********************
  *      MACROS
@@ -70,7 +68,7 @@ void lv_port_indev_init(void)
      *  You should shape them according to your hardware
      */
 
-    joystick_init();
+    navigation_input_init();
 }
 
 /**********************
@@ -78,16 +76,16 @@ void lv_port_indev_init(void)
  **********************/
 
 /**
- * Initialize the joystick input device
+ * Initialize the navigation input device (joystick + buttons)
  */
-static void joystick_init(void)
+static void navigation_input_init(void)
 {
     static lv_indev_drv_t indev_drv;
 
     /*Initialize the joystick input device driver*/
     lv_indev_drv_init(&indev_drv);
     indev_drv.type = LV_INDEV_TYPE_KEYPAD;
-    indev_drv.read_cb = joystick_read;
+    indev_drv.read_cb = navigation_input_read;
 
     /*Register the driver in LVGL and save the created input device object*/
     indev_joystick = lv_indev_drv_register(&indev_drv);
@@ -101,13 +99,13 @@ static void joystick_init(void)
 }
 
 /**
- * Get the current key state of the joystick and buttons
+ * Read navigation input state (joystick + buttons) for LVGL
  * @param indev_drv pointer to the related input device driver
  * @param data store the key data here
  */
-static void joystick_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
+static void navigation_input_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 {
-    uint32_t key = joystick_get_key();
+    uint32_t key = get_navigation_key();
     
     if(key != 0) {
         data->state = LV_INDEV_STATE_PR;
@@ -118,14 +116,13 @@ static void joystick_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 }
 
 /**
- * Get the current key pressed (joystick direction or button)
- * @return key code or 0 if no key is pressed
+ * Get the current navigation key from joystick and buttons
+ * @return LVGL key code or 0 if no key is pressed
  */
-static uint32_t joystick_get_key(void)
+static uint32_t get_navigation_key(void)
 {
-    uint32_t current_time = HAL_GetTick();
     uint32_t key = 0;
-    
+
     /* Check buttons first (higher priority) */
     if(btn_a_pressed) {
         key = LV_KEY_ENTER;  /* Button A = Enter/Select */
@@ -141,53 +138,21 @@ static uint32_t joystick_get_key(void)
         /* Button D = Game-specific action (no menu navigation) */
         key = 0;  /* Ignore in menu, will be handled by game logic later */
     }
-    else {
-        /* Check joystick directions */
-        joystick_t joy_data;
-        int16_t x_diff = 0;
-        int16_t y_diff = 0;
-        
-        if (inputGetJoyAxis(0, &joy_data) == 0) {  // X axis
-            x_diff = (int16_t)joy_data.jyX - (int16_t)JOYSTICK_CENTER_X;
-        }
-        if (inputGetJoyAxis(1, &joy_data) == 0) {  // Y axis
-            y_diff = (int16_t)joy_data.jyY - (int16_t)JOYSTICK_CENTER_Y;
-        }
-        
-        /* Determine primary direction (strongest movement) */
-        if(abs(x_diff) > JOYSTICK_DEADZONE || abs(y_diff) > JOYSTICK_DEADZONE) {
-            if(abs(x_diff) > abs(y_diff)) {
-                /* Horizontal movement is stronger */
-                if(x_diff > 0) {
-                    key = LV_KEY_RIGHT;
-                } else {
-                    key = LV_KEY_LEFT;
-                }
-            } else {
-                /* Vertical movement is stronger */
-                if(y_diff > 0) {
-                    key = LV_KEY_NEXT;  /* Down = Next element in group */
-                } else {
-                    key = LV_KEY_PREV;  /* Up = Previous element in group */
-                }
-            }
-        }
+    /* Check joystick directions - processed by inputProcessor */
+    else if(joy_up_pressed) {
+        key = LV_KEY_PREV;  /* Up = Previous element in group */
     }
-    
-    /* Implement debouncing - only return key if enough time has passed */
-    if(key != 0) {
-        if(key == last_key && (current_time - last_key_time) < JOYSTICK_DEBOUNCE_TIME) {
-            /* Same key pressed too soon, ignore */
-            return 0;
-        }
-        last_key = key;
-        last_key_time = current_time;
-        return key;
+    else if(joy_down_pressed) {
+        key = LV_KEY_NEXT;  /* Down = Next element in group */
     }
-    
-    /* No key pressed, reset last key */
-    last_key = 0;
-    return 0;
+    else if(joy_left_pressed) {
+        key = LV_KEY_LEFT;
+    }
+    else if(joy_right_pressed) {
+        key = LV_KEY_RIGHT;
+    }
+
+    return key;
 }
 
 /**
@@ -214,7 +179,30 @@ void lv_port_indev_btn_d_pressed(void)
 }
 
 /**
- * Clear button states - should be called periodically
+ * Joystick direction press handlers - called from UIController
+ */
+void lv_port_indev_joy_up_pressed(void)
+{
+    joy_up_pressed = true;
+}
+
+void lv_port_indev_joy_down_pressed(void)
+{
+    joy_down_pressed = true;
+}
+
+void lv_port_indev_joy_left_pressed(void)
+{
+    joy_left_pressed = true;
+}
+
+void lv_port_indev_joy_right_pressed(void)
+{
+    joy_right_pressed = true;
+}
+
+/**
+ * Clear button and joystick states - should be called periodically
  */
 void lv_port_indev_clear_buttons(void)
 {
@@ -222,6 +210,11 @@ void lv_port_indev_clear_buttons(void)
     btn_b_pressed = false;
     btn_c_pressed = false;
     btn_d_pressed = false;
+
+    joy_up_pressed = false;
+    joy_down_pressed = false;
+    joy_left_pressed = false;
+    joy_right_pressed = false;
 }
 
 /**

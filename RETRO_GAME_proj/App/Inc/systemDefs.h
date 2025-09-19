@@ -12,8 +12,11 @@
 
 #define GFX_TICK_MS 50
 
-// Modo de test para desarrollo
-//#define TEST_MODE
+// Niveles de debug para desarrollo
+// 0: NO DEBUG
+// 1: DEBUG LIGERO - habilita timers y traceEnabled
+// 2: FULL DEBUG - todo lo anterior + funcionalidades adicionales
+#define DEBUG_LEVEL 1
 
 /* ==============================
  * Estados globales del sistema

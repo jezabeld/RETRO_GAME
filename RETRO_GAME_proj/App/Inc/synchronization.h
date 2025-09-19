@@ -118,6 +118,10 @@ enum {
 	INP_BTN_B,
 	INP_BTN_C,
 	INP_BTN_D,
+	INP_JY_UP,
+	INP_JY_DOWN,
+	INP_JY_LEFT,
+	INP_JY_RIGHT,
 
 /* ======================
  * Drivers: TFT_, AUD_, HAP_, DBG_, INP_, MEM_, TIM_
@@ -144,9 +148,9 @@ enum {
     DBG_TRACE_OFF,
 
 /* ======================
- * TEST_MODE
+ * DEBUG_LEVEL >= 2 (FULL DEBUG)
  * ====================== */
-//#ifdef TEST_MODE
+//#if DEBUG_LEVEL >= 2
 	SE_GFX_INIT = 120,     // GraphEngine: LVGL inicializado (solo para test)
 	SE_GFX_RUNNING,        // GraphEngine: indicador de actividad (solo para test)
 	SE_UI_SUSPENDING,

@@ -34,7 +34,7 @@
 #include "synchronization.h"
 #include "LogSink.h"
 #include "CommandParser.h"
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
 #include "FlowPlans.h"
 #endif
 
@@ -159,13 +159,13 @@ void bootInit(void)
     vQueueAddToRegistry(semUiReady, "Semáforo UI");
 
     /* ===== CREACIÓN DE TAREAS ===== */
-    ret = xTaskCreate(EventDispatcherTask, "EvntDisp", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+5, &tskEvntDisp);
+    ret = xTaskCreate(EventDispatcherTask, "EvntDisp", 3*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+5, &tskEvntDisp);
     configASSERT(pdPASS == ret);
 
     ret = xTaskCreate(GraphEngineTask, "Graph", 6*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, &tskGraph);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(UIControllerTask, "UiCtrl", 4*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskUiCtrl);
+    ret = xTaskCreate(UIControllerTask, "UiCtrl", 5*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskUiCtrl);
     configASSERT(pdPASS == ret);
 
     ret = xTaskCreate(SystemManagerTask, "SysMng", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskSysMng);
@@ -211,7 +211,7 @@ void bootInit(void)
     uartSendValue(bootEvent);
     uartSendString(" - BootMng: evento enviado\r\n");
 
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
     flowPlanBootInit();
 #endif
 }

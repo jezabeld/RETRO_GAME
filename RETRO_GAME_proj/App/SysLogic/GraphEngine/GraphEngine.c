@@ -63,7 +63,7 @@ void GraphEngineTask(void *pvParameters)
     // Señalizar que GraphEngine está listo 
     xSemaphoreGive(semGFXReady);
     
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
     // Enviar evento para FlowPlans indicando que LVGL está inicializado
     event_id_t gfxInitEvent = SE_GFX_INIT;
     xQueueSend(qEvents, &gfxInitEvent, 0);
@@ -79,7 +79,7 @@ void GraphEngineTask(void *pvParameters)
     
     for(;;)
     {
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
         // Enviar evento SE_GFX_RUNNING para indicar actividad (solo para test)
         event_id_t gfxEvent = SE_GFX_RUNNING;
         xQueueSend(qEvents, &gfxEvent, 0);

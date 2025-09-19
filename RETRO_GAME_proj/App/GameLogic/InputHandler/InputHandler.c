@@ -31,11 +31,9 @@ void InputHandlerTask(void *pvParameters)
 		joystick_t joy_data;
 		uint16_t adc_pitch = 0;
 		uint16_t adc_roll = 0;
-		
-		if (inputGetJoyAxis(0, &joy_data) == 0) {  // X axis
+
+		if (inputGetJoyAxis(2, &joy_data) == 0) { 
 			adc_roll = joy_data.jyX;
-		}
-		if (inputGetJoyAxis(1, &joy_data) == 0) {  // Y axis
 			adc_pitch = joy_data.jyY;
 		}
 
@@ -48,7 +46,7 @@ void InputHandlerTask(void *pvParameters)
 		};
 
 		(void)xQueueSend(qActions, &act, 0);
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
 		sendEvent(SE_INH_ACTION_SENT);
 #endif
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(GFX_TICK_MS)); // Timing exacto cada 50ms

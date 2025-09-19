@@ -45,7 +45,7 @@ void RenderEngineTask(void *pvParameters)
 
 		rf.has_ground_h = 1;
 		rf.ground_h_px  = map_pitch_to_ground_px(gameModel.pitch, TFT_HEIGHT);
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
 		sendEvent(SE_RDX_RENDER_SENT);
 #endif
 //        vTaskDelay(pdMS_TO_TICKS(100));
