@@ -8,14 +8,18 @@
 #include "EventDispatcher.h"
 #include "synchronization.h"
 #include <stdbool.h>
-#include "BootMng.h" // aca esta el define de TEST_MODE
+#include "systemDefs.h" // aca esta el define de DEBUG_LEVEL
+#include "cmsis_os.h"
+#include "stm32f4xx.h"
 
 // Variable global para control de trace
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
 #include "FlowAssert.h"
 bool traceEnabled = true;
-#else
+#elif DEBUG_LEVEL >= 1
 bool traceEnabled = true;
+#else
+bool traceEnabled = false;
 #endif
 
 volatile UBaseType_t uxStackEvntDispTask;
@@ -34,12 +38,12 @@ void EventDispatcherTask(void *pvParameters) {
             if (traceEnabled) {
                 xQueueSend(qLog, &receivedEvent, 0);
             }
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
             flowAssertOnEvent(receivedEvent);
 #endif
             routeEvent(receivedEvent);
 
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
         flowAssertPoll();   // para que caigan los mensajes de error si un paso no llega a tiempo:
 #endif
         }
@@ -52,9 +56,16 @@ static void routeEvent(event_id_t event) {
 		case INP_BTN_B:
 		case INP_BTN_C:
 		case INP_BTN_D:
-			// Eventos ya debouncados desde InputDrv → directamente a UI
+        // Eventos ya debouncados desde InputDrv → directamente a UI
+        case INP_JY_UP:
+	    case INP_JY_DOWN:
+	    case INP_JY_LEFT:
+	    case INP_JY_RIGHT:
+        // Eventos de joystic direccionales → directamente a UI
 			xQueueSend(qUiCtrl, &event, 0);
 			break;
+
+        // INP_JY_UPDATE ya no se usa - el procesamiento se hace en InputDrv
 
     	case DBG_TRACE_ON:
     		traceEnabled = true;
@@ -73,11 +84,12 @@ static void routeEvent(event_id_t event) {
             break;
             
         // Game Events -> qGame
-        case GE_GAME_STARTED:
-        case GE_GAME_CONTINUED:
-        case GE_GAME_PAUSED:
-        case GE_GAME_RESUME:
-        case GE_GAME_EXIT:
+        case GE_START_NEW_GAME:
+//        case GE_GAME_STARTED:
+//        case GE_GAME_CONTINUED:
+//        case GE_GAME_PAUSED:
+//        case GE_GAME_RESUME:
+//        case GE_GAME_EXIT:
             xQueueSend(qGame, &event, 0);
             break;
             

@@ -6,12 +6,49 @@
  */
 
 #include "InputHandler.h"
+#include "GameManager.h"
+#include "synchronization.h"
 #include "cmsis_os.h"
+#include "systemDefs.h"
+#include "InputDrv.h"
+
+/* Normalización helper: ADC 0..4095 -> -100..+100 */
+static int16_t norm_adc_to_100(uint16_t adc)
+{
+    if (adc > 4095) adc = 4095;
+    int32_t v = ((int32_t)adc * 200) / 4095 - 100;
+    if (v < -100) v = -100;
+    if (v > 100)  v = 100;
+    return (int16_t)v;
+}
 
 void InputHandlerTask(void *pvParameters)
 {
+	TickType_t xLastWakeTime = xTaskGetTickCount();
     for(;;)
     {
-        vTaskDelay(pdMS_TO_TICKS(100));
+    	// Leer HW
+		joystick_t joy_data;
+		uint16_t adc_pitch = 0;
+		uint16_t adc_roll = 0;
+
+		if (inputGetJoyAxis(2, &joy_data) == 0) { 
+			adc_roll = joy_data.jyX;
+			adc_pitch = joy_data.jyY;
+		}
+
+		uint8_t  pause_btn = /* btn PAUSE edge*/ 0;
+
+		gameAction_t act = {
+			.pitch = norm_adc_to_100(adc_pitch),
+			.roll  = norm_adc_to_100(adc_roll),
+			.pause = pause_btn,
+		};
+
+		(void)xQueueSend(qActions, &act, 0);
+#if DEBUG_LEVEL >= 2
+		sendEvent(SE_INH_ACTION_SENT);
+#endif
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(GFX_TICK_MS)); // Timing exacto cada 50ms
     }
 }

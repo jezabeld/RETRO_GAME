@@ -10,6 +10,10 @@
 
 #include "cmsis_os.h"
 
+/* Bits de notificación (canal 0) */
+#define GFXN_UI   (1u << 0)
+#define GFXN_GAME (1u << 1)
+
 void GraphEngineTask(void *pvParameters);
 
 #endif /* SYSLOGIC_GRAPHENGINE_GRAPHENGINE_H_ */

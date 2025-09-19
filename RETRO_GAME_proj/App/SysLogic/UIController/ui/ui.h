@@ -27,7 +27,7 @@ extern "C" {
 extern lv_obj_t *ui____initial_actions0;
 
 // UI INIT
-void ui_init(void);
+void ui_init(uint8_t show_continue_button);
 void ui_destroy(void);
 
 #ifdef __cplusplus

@@ -4,15 +4,20 @@
 // Project name: SquareLine_Project
 
 #include "ui.h"
+#include "synchronization.h"
 
 void startNewGame(lv_event_t * e)
 {
-	// Your code here
+	// Enviar evento para iniciar nuevo juego
+	event_id_t event = SE_START_NEW_GAME;
+	xQueueSend(qEvents, &event, 0);
 }
 
 void continueSavedGame(lv_event_t * e)
 {
-	// Your code here
+	// Enviar evento para continuar juego guardado
+	event_id_t event = SE_START_SAVED_GAME;
+	xQueueSend(qEvents, &event, 0);
 }
 
 void resumeGame(lv_event_t * e)

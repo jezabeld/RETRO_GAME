@@ -41,6 +41,10 @@ void lv_port_indev_btn_a_pressed(void);
 void lv_port_indev_btn_b_pressed(void);
 void lv_port_indev_btn_c_pressed(void);
 void lv_port_indev_btn_d_pressed(void);
+void lv_port_indev_joy_up_pressed(void);
+void lv_port_indev_joy_down_pressed(void);
+void lv_port_indev_joy_left_pressed(void);
+void lv_port_indev_joy_right_pressed(void);
 void lv_port_indev_clear_buttons(void);
 lv_group_t * lv_port_indev_get_group(void);
 

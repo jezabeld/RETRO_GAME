@@ -34,7 +34,7 @@
 #include "synchronization.h"
 #include "LogSink.h"
 #include "CommandParser.h"
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
 #include "FlowPlans.h"
 #endif
 
@@ -46,6 +46,9 @@ extern TIM_HandleTypeDef htim3;         // PWM timer para PB0
 extern TIM_HandleTypeDef htim6;         // Sample rate timer
 extern DMA_HandleTypeDef hdma_tim6_up;  // DMA para TIM6_UP
 extern SPI_HandleTypeDef hspi1;         // SPI para la pantalla
+extern ADC_HandleTypeDef hadc1;
+extern DMA_HandleTypeDef hdma_adc1;
+extern TIM_HandleTypeDef htim2;
 
 /* ===== Handlers de tareas ===== */
 TaskHandle_t tskEvntDisp;
@@ -70,7 +73,7 @@ QueueHandle_t qHaptic;
 QueueHandle_t qLog;
 QueueHandle_t qSystem;
 QueueHandle_t qGame;
-//QueueHandle_t qRender;
+QueueHandle_t qActions;
 QueueHandle_t qInHand;
 
 #define DEBOUNCE_TIME_MS 50
@@ -107,7 +110,8 @@ void bootInit(void)
 	while (audioResult != 0){/*error*/};
 
 	hapticInit();
-	uint8_t inputResult = inputInit();
+    
+	uint8_t inputResult = inputInit(&hadc1, &hdma_adc1, &htim2);
 	while (inputResult != 0) {/*error*/};
 	
 	uint8_t timerResult = timerInit();
@@ -127,8 +131,9 @@ void bootInit(void)
     qLog      = xQueueCreate(2*QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qLog);
     qSystem   = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qSystem);
     qGame     = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qGame);
-    //qRender   = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qRender);
     qInHand   = xQueueCreate(QUEUE_SIZE, sizeof(event_id_t));  configASSERT(qInHand);
+
+    qActions   = xQueueCreate(QUEUE_SIZE, sizeof(gameAction_t));  configASSERT(qActions);
 
     /* Registro para depuración */
     vQueueAddToRegistry(qEvents,  "qEvents");
@@ -141,8 +146,8 @@ void bootInit(void)
     vQueueAddToRegistry(qLog,     "qLog");
     vQueueAddToRegistry(qGame,    "qGame");
     vQueueAddToRegistry(qResLoad, "qResLoad");
-    //vQueueAddToRegistry(qRender,  "qRender");
     vQueueAddToRegistry(qInHand,  "qInHand");
+    vQueueAddToRegistry(qActions,  "qActions");
 
     /* ===== CREACIÓN DE SEMÁFOROS ===== */
     semGFXReady = xSemaphoreCreateBinary();
@@ -154,13 +159,13 @@ void bootInit(void)
     vQueueAddToRegistry(semUiReady, "Semáforo UI");
 
     /* ===== CREACIÓN DE TAREAS ===== */
-    ret = xTaskCreate(EventDispatcherTask, "EvntDisp", 2*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+5, &tskEvntDisp);
+    ret = xTaskCreate(EventDispatcherTask, "EvntDisp", 3*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+5, &tskEvntDisp);
     configASSERT(pdPASS == ret);
 
     ret = xTaskCreate(GraphEngineTask, "Graph", 6*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, &tskGraph);
     configASSERT(pdPASS == ret);
 
-    ret = xTaskCreate(UIControllerTask, "UiCtrl", 4*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskUiCtrl);
+    ret = xTaskCreate(UIControllerTask, "UiCtrl", 5*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskUiCtrl);
     configASSERT(pdPASS == ret);
 
     ret = xTaskCreate(SystemManagerTask, "SysMng", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskSysMng);
@@ -206,7 +211,7 @@ void bootInit(void)
     uartSendValue(bootEvent);
     uartSendString(" - BootMng: evento enviado\r\n");
 
-#ifdef TEST_MODE
+#if DEBUG_LEVEL >= 2
     flowPlanBootInit();
 #endif
 }
