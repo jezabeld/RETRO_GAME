@@ -12,6 +12,7 @@
 
 #include "mock_stm32f446xx.h"
 #include "mock_stm32f4xx_hal.h"
+#include "mock_stm32f4xx_hal_gpio.h"
 #include "mock_stm32f4xx_hal_spi.h"
 #include "mock_fonts.h"
 

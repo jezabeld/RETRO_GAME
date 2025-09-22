@@ -7,7 +7,7 @@
  * events (UP/DOWN/LEFT/RIGHT) with auto-repeat functionality for menu navigation.
  * ADC data is processed at 100Hz with DMA, and directional events are generated at 50Hz.
  *
- * @date Sep 18, 2025
+ * @date Aug 12, 2025
  * @author jez
  */
 
@@ -17,18 +17,18 @@
 #include "main.h"
 
 /* === Macros definitions ====================================================================== */
-#define DEBOUNCE_BTN_MS   25      ///< Button debounce time in milliseconds
-#define ACTIVE_LOW_BTN    1       ///< Button active logic (1=active low, 0=active high)
-#define JY_CENTER_X   2048u       ///< Joystick X-axis center value for 12-bit ADC
-#define JY_CENTER_Y   2048u       ///< Joystick Y-axis center value for 12-bit ADC
-#define ADC_FS_HZ    1000u        ///< ADC sampling frequency in Hz (X,Y sequence rate)
-#define ADC_MAX_12B      4095u    ///< Maximum value for 12-bit ADC
-#define ALPHA_Q15      23675u     ///< EMA filter alpha coefficient in Q15 format (≈0.72)
+#define DEBOUNCE_BTN_MS 25 ///< Button debounce time in milliseconds
+#define ACTIVE_LOW_BTN 1   ///< Button active logic (1=active low, 0=active high)
+#define JY_CENTER_X 2048u  ///< Joystick X-axis center value for 12-bit ADC
+#define JY_CENTER_Y 2048u  ///< Joystick Y-axis center value for 12-bit ADC
+#define ADC_FS_HZ 1000u    ///< ADC sampling frequency in Hz (X,Y sequence rate)
+#define ADC_MAX_12B 4095u  ///< Maximum value for 12-bit ADC
+#define ALPHA_Q15 23675u   ///< EMA filter alpha coefficient in Q15 format (≈0.72)
 
-#define R_IN     800u             ///< Joystick inner radius threshold for entering active state
-#define R_OUT    600u             ///< Joystick outer radius threshold for returning to center (hysteresis)
-#define DOM_MARGIN 50             ///< Dominance margin for axis selection (~1% of ADC range)
-#define JY_REPEAT_MS       500u   ///< Joystick repeat interval in milliseconds for auto-repeat functionality
+#define R_IN 800u         ///< Joystick inner radius threshold for entering active state
+#define R_OUT 600u        ///< Joystick outer radius threshold for returning to center (hysteresis)
+#define DOM_MARGIN 50     ///< Dominance margin for axis selection (~1% of ADC range)
+#define JY_REPEAT_MS 500u ///< Joystick repeat interval in milliseconds for auto-repeat functionality
 
 /* === Private data type declarations ========================================================== */
 
@@ -36,75 +36,75 @@
  * @brief DMA buffer configuration for joystick ADC data
  */
 typedef struct {
-    uint16_t buff[40];        ///< DMA buffer for ADC data (20ms @1kHz, 2 channels = 40 half-words)
-    uint32_t fullLen;         ///< Total length of DMA buffer
-    uint32_t halfLen;         ///< Half buffer length for half/complete callbacks
+    uint16_t buff[40]; ///< DMA buffer for ADC data (20ms @1kHz, 2 channels = 40 half-words)
+    uint32_t fullLen;  ///< Total length of DMA buffer
+    uint32_t halfLen;  ///< Half buffer length for half/complete callbacks
 } dmaBuffer_t;
 
 /**
  * @brief Button finite state machine states
  */
 typedef enum {
-    BTN_IDLE,           ///< Button not pressed, waiting for falling edge
-    BTN_PRESS_PENDING,  ///< Edge detected, debouncing in progress
-    BTN_PRESSED         ///< Press confirmed (future: hold/release states here)
+    BTN_IDLE,          ///< Button not pressed, waiting for falling edge
+    BTN_PRESS_PENDING, ///< Edge detected, debouncing in progress
+    BTN_PRESSED        ///< Press confirmed (future: hold/release states here)
 } btnFSM_t;
 
 /**
  * @brief Button information structure
  */
 typedef struct {
-    btnFSM_t state;           ///< Current button state
-    GPIO_TypeDef* port;       ///< GPIO port
-    uint16_t pin;             ///< GPIO pin
-    IRQn_Type irqn;           ///< IRQ number
-    uint32_t debounceStart;   ///< Timestamp when debounce started
-    event_id_t pressEvent;    ///< Event to send when button is pressed
-    TimerHandle_t timer;      ///< Debounce timer (initially NULL)
+    btnFSM_t state;         ///< Current button state
+    GPIO_TypeDef *port;     ///< GPIO port
+    uint16_t pin;           ///< GPIO pin
+    IRQn_Type irqn;         ///< IRQ number
+    uint32_t debounceStart; ///< Timestamp when debounce started
+    event_id_t pressEvent;  ///< Event to send when button is pressed
+    TimerHandle_t timer;    ///< Debounce timer (initially NULL)
 } btnInfo_t;
 
 /**
  * @brief Joystick directional finite state machine states
  */
 typedef enum {
-    JY_CENTER,          ///< In central deadzone
-    JY_ACTIVE,          ///< Outside deadzone, active, changing direction
-    JY_REPEAT           ///< Joystick repeating the same direction
+    JY_CENTER, ///< In central deadzone
+    JY_ACTIVE, ///< Outside deadzone, active, changing direction
+    JY_REPEAT  ///< Joystick repeating the same direction
 } joyFSM_t;
 
 /**
  * @brief Joystick direction key enumeration
  */
 typedef enum {
-    JOY_KEY_NONE = 0,   ///< No direction (centered)
-    JOY_KEY_LEFT,       ///< Left direction
-    JOY_KEY_RIGHT,      ///< Right direction
-    JOY_KEY_UP,         ///< Up direction
-    JOY_KEY_DOWN        ///< Down direction
+    JOY_KEY_NONE = 0, ///< No direction (centered)
+    JOY_KEY_LEFT,     ///< Left direction
+    JOY_KEY_RIGHT,    ///< Right direction
+    JOY_KEY_UP,       ///< Up direction
+    JOY_KEY_DOWN      ///< Down direction
 } joyKey_t;
 
 /**
  * @brief Joystick state information structure
  */
 typedef struct {
-    joyFSM_t state;           ///< Current FSM state
-    joyKey_t heldKey;         ///< Current held direction key
-    uint32_t next_repeat_at;  ///< Next repeat timestamp (using HAL_GetTick)
-    uint32_t updated_at;      ///< Last update timestamp
+    joyFSM_t state;          ///< Current FSM state
+    joyKey_t heldKey;        ///< Current held direction key
+    uint32_t next_repeat_at; ///< Next repeat timestamp (using HAL_GetTick)
+    uint32_t updated_at;     ///< Last update timestamp
 } joyInfo_t;
 
 /**
  * @brief EMA filter state and processing data
  */
 typedef struct {
-    volatile uint16_t procX, procY;     ///< Last processed data values
-    uint32_t emaX, emaY;                ///< EMA accumulator values (integer)
+    volatile uint16_t procX, procY; ///< Last processed data values
+    uint32_t emaX, emaY;            ///< EMA accumulator values (integer)
 } joystickFilter_t;
 
 /* === Private variable declarations =========================================================== */
 
 /* === Private function declarations =========================================================== */
-static void processButtonDebounce(btnInfo_t* btn, const char* btnName);
+static void processButtonDebounce(btnInfo_t *btn, const char *btnName);
 static void processJoystickFiltering(const uint16_t *buf, uint32_t base, uint32_t half);
 static void updateJoystickPublishedValues(void);
 static void generateJoysticDirectionEvents(void);
@@ -123,31 +123,31 @@ extern TimerHandle_t tBtnCdebounce;
 extern TimerHandle_t tBtnDdebounce;
 
 /** DMA buffer instance for joystick ADC data */
-static dmaBuffer_t dmaBuffer = {
-    .buff = {0},
-    .fullLen = 40,   ///< Total buffer length (40 half-words)
-    .halfLen = 20    ///< Half buffer length (20 half-words)
+dmaBuffer_t dmaBuffer = {
+    .buff = { 0 },
+    .fullLen = 40, ///< Total buffer length (40 half-words)
+    .halfLen = 20  ///< Half buffer length (20 half-words)
 };
 
 /** Joystick EMA filter state */
 static joystickFilter_t joyFilter = {
-    .procX = 0, .procY = 0,
-    .emaX = 0, .emaY = 0,
+    .procX = 0,
+    .procY = 0,
+    .emaX = 0,
+    .emaY = 0,
 };
 
 /** Published joystick values accessible via inputGetJoyAxis() */
-static volatile joystick_t publishedJoy = {0};
+static volatile joystick_t publishedJoy = { 0 };
 
 /** Joystick directional state machine status */
-static joyInfo_t sJoyStatus = {0};
+static joyInfo_t sJoyStatus = { 0 };
 
 /** Button information array for all 4 buttons */
-static btnInfo_t sButtons[4] = {
-    {BTN_IDLE, BTN_A_GPIO_Port, BTN_A_Pin, BTN_A_EXTI_IRQn, 0, INP_BTN_A, NULL},
-    {BTN_IDLE, BTN_B_GPIO_Port, BTN_B_Pin, BTN_B_EXTI_IRQn, 0, INP_BTN_B, NULL},
-    {BTN_IDLE, BTN_C_GPIO_Port, BTN_C_Pin, BTN_C_EXTI_IRQn, 0, INP_BTN_C, NULL},
-    {BTN_IDLE, BTN_D_GPIO_Port, BTN_D_Pin, BTN_D_EXTI_IRQn, 0, INP_BTN_D, NULL}
-};
+static btnInfo_t sButtons[4] = { { BTN_IDLE, BTN_A_GPIO_Port, BTN_A_Pin, BTN_A_EXTI_IRQn, 0, INP_BTN_A, NULL },
+                                 { BTN_IDLE, BTN_B_GPIO_Port, BTN_B_Pin, BTN_B_EXTI_IRQn, 0, INP_BTN_B, NULL },
+                                 { BTN_IDLE, BTN_C_GPIO_Port, BTN_C_Pin, BTN_C_EXTI_IRQn, 0, INP_BTN_C, NULL },
+                                 { BTN_IDLE, BTN_D_GPIO_Port, BTN_D_Pin, BTN_D_EXTI_IRQn, 0, INP_BTN_D, NULL } };
 
 /* === Private function implementation ========================================================= */
 
@@ -160,18 +160,18 @@ static btnInfo_t sButtons[4] = {
  * @param btn Pointer to button information structure
  * @param btnName Button name for debugging (unused in release)
  */
-static void processButtonDebounce(btnInfo_t* btn, const char* btnName) {
+static void processButtonDebounce(btnInfo_t *btn, const char *btnName) {
     if (btn->state == BTN_PRESS_PENDING) {
-      GPIO_PinState pin_state = HAL_GPIO_ReadPin(btn->port, btn->pin);
+        GPIO_PinState pin_state = HAL_GPIO_ReadPin(btn->port, btn->pin);
 
-      uint8_t is_pressed = (ACTIVE_LOW_BTN) ? (pin_state == GPIO_PIN_RESET) : (pin_state == GPIO_PIN_SET);
+        uint8_t is_pressed = (ACTIVE_LOW_BTN) ? (pin_state == GPIO_PIN_RESET) : (pin_state == GPIO_PIN_SET);
 
-      if (is_pressed) {
-        btn->state = BTN_PRESSED;
-        xQueueSend(qEvents, &(btn->pressEvent), 0);
-      } else {
-        btn->state = BTN_IDLE;
-      }
+        if (is_pressed) {
+            btn->state = BTN_PRESSED;
+            xQueueSend(qEvents, &(btn->pressEvent), 0);
+        } else {
+            btn->state = BTN_IDLE;
+        }
     }
 
     __HAL_GPIO_EXTI_CLEAR_IT(btn->irqn);
@@ -189,11 +189,10 @@ static void processButtonDebounce(btnInfo_t* btn, const char* btnName) {
  * @param base Starting index in buffer
  * @param half Number of sample pairs to process
  */
-static void processJoystickFiltering(const uint16_t *buf, uint32_t base, uint32_t half)
-{
+static void processJoystickFiltering(const uint16_t *buf, uint32_t base, uint32_t half) {
     uint32_t sumx = 0, sumy = 0, n = 0;
     uint32_t end = base + half;
-    for (uint32_t i = base; i < end; i += 2) {   ///< step=2: X,Y interleaved
+    for (uint32_t i = base; i < end; i += 2) { ///< step=2: X,Y interleaved
         sumx += buf[i + 0];
         sumy += buf[i + 1];
         n++;
@@ -201,25 +200,25 @@ static void processJoystickFiltering(const uint16_t *buf, uint32_t base, uint32_
 
     if (n == 0) return;
 
-    uint16_t avgx = (uint16_t)(sumx / n);
-    uint16_t avgy = (uint16_t)(sumy / n);
+    uint16_t avgx = (uint16_t) (sumx / n);
+    uint16_t avgy = (uint16_t) (sumy / n);
 
     // EMA filtering: y = y + alpha*(x - y)
-    int32_t errX = (int32_t)avgx - (int32_t)joyFilter.emaX;
-    int32_t deltaX = ((int32_t)ALPHA_Q15 * errX) >> 15;
-    int32_t yX = (int32_t)joyFilter.emaX + deltaX;
+    int32_t errX = (int32_t) avgx - (int32_t) joyFilter.emaX;
+    int32_t deltaX = ((int32_t) ALPHA_Q15 * errX) >> 15;
+    int32_t yX = (int32_t) joyFilter.emaX + deltaX;
     if (yX < 0) yX = 0;
-    if (yX > (int32_t)ADC_MAX_12B) yX = ADC_MAX_12B;
-    joyFilter.emaX = (uint32_t)yX;
-    joyFilter.procX = (uint16_t)yX;
+    if (yX > (int32_t) ADC_MAX_12B) yX = ADC_MAX_12B;
+    joyFilter.emaX = (uint32_t) yX;
+    joyFilter.procX = (uint16_t) yX;
 
-    int32_t errY = (int32_t)avgy - (int32_t)joyFilter.emaY;
-    int32_t deltaY = ((int32_t)ALPHA_Q15 * errY) >> 15;
-    int32_t yY = (int32_t)joyFilter.emaY + deltaY;
+    int32_t errY = (int32_t) avgy - (int32_t) joyFilter.emaY;
+    int32_t deltaY = ((int32_t) ALPHA_Q15 * errY) >> 15;
+    int32_t yY = (int32_t) joyFilter.emaY + deltaY;
     if (yY < 0) yY = 0;
-    if (yY > (int32_t)ADC_MAX_12B) yY = ADC_MAX_12B;
-    joyFilter.emaY = (uint32_t)yY;
-    joyFilter.procY = (uint16_t)yY;
+    if (yY > (int32_t) ADC_MAX_12B) yY = ADC_MAX_12B;
+    joyFilter.emaY = (uint32_t) yY;
+    joyFilter.procY = (uint16_t) yY;
 }
 
 /**
@@ -247,55 +246,55 @@ static void generateJoysticDirectionEvents(void) {
     joyKey_t k = getDominantDirection(publishedJoy.jyX, publishedJoy.jyY, sJoyStatus.heldKey);
 
     switch (sJoyStatus.state) {
-    case JY_CENTER:
-        if (r >= R_IN) {                        ///< transition JY_CENTER -> JY_ACTIVE
-            sJoyStatus.state = JY_ACTIVE;
-            if (k != JOY_KEY_NONE) {
+        case JY_CENTER:
+            if (r >= R_IN) { ///< transition JY_CENTER -> JY_ACTIVE
+                sJoyStatus.state = JY_ACTIVE;
+                if (k != JOY_KEY_NONE) {
+                    sJoyStatus.heldKey = k;
+                    shouldPublish = 1;
+                    sJoyStatus.next_repeat_at = sJoyStatus.updated_at + JY_REPEAT_MS;
+                }
+            }
+            break;
+
+        case JY_ACTIVE:
+            if (r <= R_OUT) { ///< transition JY_ACTIVE -> JY_CENTER
+                sJoyStatus.state = JY_CENTER;
+                sJoyStatus.heldKey = JOY_KEY_NONE;
+            } else if (k != sJoyStatus.heldKey) { ///< transition JY_ACTIVE -> JY_ACTIVE
                 sJoyStatus.heldKey = k;
                 shouldPublish = 1;
                 sJoyStatus.next_repeat_at = sJoyStatus.updated_at + JY_REPEAT_MS;
+            } else {
+                sJoyStatus.state = JY_REPEAT;
             }
-        }
-        break;
+            break;
 
-    case JY_ACTIVE:
-        if (r <= R_OUT) {                       ///< transition JY_ACTIVE -> JY_CENTER
-            sJoyStatus.state = JY_CENTER;
-            sJoyStatus.heldKey = JOY_KEY_NONE;
-        } else if (k != sJoyStatus.heldKey){    ///< transition JY_ACTIVE -> JY_ACTIVE
-            sJoyStatus.heldKey = k;
-            shouldPublish = 1;
-            sJoyStatus.next_repeat_at = sJoyStatus.updated_at + JY_REPEAT_MS;
-        } else {
-            sJoyStatus.state = JY_REPEAT;
-        }
-        break;
-
-    case JY_REPEAT:
-        if (r <= R_OUT) {                       ///< transition JY_REPEAT -> JY_CENTER
-            sJoyStatus.state = JY_CENTER;
-            sJoyStatus.heldKey = JOY_KEY_NONE;
-        } else if (k != sJoyStatus.heldKey){    ///< transition JY_REPEAT -> JY_ACTIVE
-            sJoyStatus.state = JY_ACTIVE;
-            sJoyStatus.heldKey = k;
-            shouldPublish = 1;
-            sJoyStatus.next_repeat_at = sJoyStatus.updated_at + JY_REPEAT_MS;
-        } else {                                ///< transition JY_REPEAT -> JY_REPEAT
-            if (sJoyStatus.updated_at >= sJoyStatus.next_repeat_at) {
+        case JY_REPEAT:
+            if (r <= R_OUT) { ///< transition JY_REPEAT -> JY_CENTER
+                sJoyStatus.state = JY_CENTER;
+                sJoyStatus.heldKey = JOY_KEY_NONE;
+            } else if (k != sJoyStatus.heldKey) { ///< transition JY_REPEAT -> JY_ACTIVE
+                sJoyStatus.state = JY_ACTIVE;
+                sJoyStatus.heldKey = k;
                 shouldPublish = 1;
                 sJoyStatus.next_repeat_at = sJoyStatus.updated_at + JY_REPEAT_MS;
+            } else { ///< transition JY_REPEAT -> JY_REPEAT
+                if (sJoyStatus.updated_at >= sJoyStatus.next_repeat_at) {
+                    shouldPublish = 1;
+                    sJoyStatus.next_repeat_at = sJoyStatus.updated_at + JY_REPEAT_MS;
+                }
             }
-        }
     }
 
     if (shouldPublish) {
         event_id_t event;
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         switch (sJoyStatus.heldKey) {
-            case JOY_KEY_LEFT:  event = INP_JY_LEFT;  break;
+            case JOY_KEY_LEFT: event = INP_JY_LEFT; break;
             case JOY_KEY_RIGHT: event = INP_JY_RIGHT; break;
-            case JOY_KEY_UP:    event = INP_JY_UP;    break;
-            case JOY_KEY_DOWN:  event = INP_JY_DOWN;  break;
+            case JOY_KEY_UP: event = INP_JY_UP; break;
+            case JOY_KEY_DOWN: event = INP_JY_DOWN; break;
             default: return;
         }
         xQueueSendFromISR(qEvents, &event, &xHigherPriorityTaskWoken);
@@ -325,10 +324,10 @@ static uint32_t calculateRadius(uint16_t x, uint16_t y) {
  * @return Approximate distance between points
  */
 static uint32_t calculateDistance(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-    int32_t dx = (int32_t)x1 - (int32_t)x2;
-    int32_t dy = (int32_t)y1 - (int32_t)y2;
-    uint32_t abs_dx = (dx >= 0) ? (uint32_t)dx : (uint32_t)(-dx);
-    uint32_t abs_dy = (dy >= 0) ? (uint32_t)dy : (uint32_t)(-dy);
+    int32_t dx = (int32_t) x1 - (int32_t) x2;
+    int32_t dy = (int32_t) y1 - (int32_t) y2;
+    uint32_t abs_dx = (dx >= 0) ? (uint32_t) dx : (uint32_t) (-dx);
+    uint32_t abs_dy = (dy >= 0) ? (uint32_t) dy : (uint32_t) (-dy);
     uint32_t max_val = (abs_dx > abs_dy) ? abs_dx : abs_dy;
     uint32_t min_val = (abs_dx < abs_dy) ? abs_dx : abs_dy;
     return max_val + (min_val >> 1);
@@ -347,8 +346,8 @@ static uint32_t calculateDistance(uint16_t x1, uint16_t y1, uint16_t x2, uint16_
  * @return Dominant direction key or JOY_KEY_NONE if in deadzone
  */
 static joyKey_t getDominantDirection(uint16_t x, uint16_t y, joyKey_t prev) {
-    int dx = (int)x - (int)JY_CENTER_X;
-    int dy = (int)y - (int)JY_CENTER_Y;
+    int dx = (int) x - (int) JY_CENTER_X;
+    int dy = (int) y - (int) JY_CENTER_Y;
 
     uint32_t r = calculateRadius(x, y);
     if (r <= R_OUT) return JOY_KEY_NONE;
@@ -359,32 +358,32 @@ static joyKey_t getDominantDirection(uint16_t x, uint16_t y, joyKey_t prev) {
 
     if (diff < DOM_MARGIN && prev != JOY_KEY_NONE) return prev;
 
-    if (ax >= ay) return (dx >= 0) ? JOY_KEY_RIGHT : JOY_KEY_LEFT;
-    else          return (dy >= 0) ? JOY_KEY_DOWN  : JOY_KEY_UP;
+    if (ax >= ay)
+        return (dx >= 0) ? JOY_KEY_RIGHT : JOY_KEY_LEFT;
+    else
+        return (dy >= 0) ? JOY_KEY_DOWN : JOY_KEY_UP;
 }
 
 /* === Public function implementation ========================================================== */
 
-uint8_t inputGetJoyAxis(uint8_t axis, joystick_t* joyPtr)
-{
+uint8_t inputGetJoyAxis(uint8_t axis, joystick_t *joyPtr) {
     if ((joyPtr == NULL) | (axis > 2)) {
         return 1;
     }
 
     if (axis == 0) {
-    	joyPtr->jyX = publishedJoy.jyX;
+        joyPtr->jyX = publishedJoy.jyX;
     } else if (axis == 1) {
-    	joyPtr->jyY = publishedJoy.jyY;
+        joyPtr->jyY = publishedJoy.jyY;
     } else {
-    	joyPtr->jyX = publishedJoy.jyX;
-    	joyPtr->jyY = publishedJoy.jyY;
+        joyPtr->jyX = publishedJoy.jyX;
+        joyPtr->jyY = publishedJoy.jyY;
     }
 
     return 0;
 }
 
-uint8_t inputInit(ADC_HandleTypeDef* adcHandle, DMA_HandleTypeDef* dmaHandle, TIM_HandleTypeDef* timHandle)
-{
+uint8_t inputInit(ADC_HandleTypeDef *adcHandle, DMA_HandleTypeDef *dmaHandle, TIM_HandleTypeDef *timHandle) {
     if (!adcHandle || !dmaHandle || !timHandle) {
         return 1;
     }
@@ -405,66 +404,68 @@ uint8_t inputInit(ADC_HandleTypeDef* adcHandle, DMA_HandleTypeDef* dmaHandle, TI
     sJoyStatus.heldKey = JOY_KEY_NONE;
     sJoyStatus.next_repeat_at = 0;
 
-    HAL_ADC_Start_DMA(adcHandle, (uint32_t*)dmaBuffer.buff, dmaBuffer.fullLen);
-    HAL_TIM_Base_Start(timHandle);
+    if (HAL_ADC_Start_DMA(adcHandle, (uint32_t *) dmaBuffer.buff, dmaBuffer.fullLen) != HAL_OK) {
+        return 1;
+    }
+
+    if (HAL_TIM_Base_Start(timHandle) != HAL_OK) {
+        return 1;
+    }
 
     return 0;
 }
 
-void btnAtimerCallback(TimerHandle_t hTimer){
+void btnAtimerCallback(TimerHandle_t hTimer) {
     processButtonDebounce(&sButtons[0], "btnA");
 }
-void btnBtimerCallback(TimerHandle_t hTimer){
+void btnBtimerCallback(TimerHandle_t hTimer) {
     processButtonDebounce(&sButtons[1], "btnB");
 }
-void btnCtimerCallback(TimerHandle_t hTimer){
+void btnCtimerCallback(TimerHandle_t hTimer) {
     processButtonDebounce(&sButtons[2], "btnC");
 }
-void btnDtimerCallback(TimerHandle_t hTimer){
+void btnDtimerCallback(TimerHandle_t hTimer) {
     processButtonDebounce(&sButtons[3], "btnD");
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	switch (GPIO_Pin) { ///< transition BTN_IDLE -> BTN_PRESS_PENDING
-	case BTN_A_Pin:
-		sButtons[0].state = BTN_PRESS_PENDING;  
-		xTimerStartFromISR(tBtnAdebounce,&xHigherPriorityTaskWoken);
-		HAL_NVIC_DisableIRQ(BTN_A_EXTI_IRQn);
-		break;
-	case BTN_B_Pin:
-		sButtons[1].state = BTN_PRESS_PENDING;
-		xTimerStartFromISR(tBtnBdebounce,&xHigherPriorityTaskWoken);
-		HAL_NVIC_DisableIRQ(BTN_B_EXTI_IRQn);
-		break;
-	case BTN_C_Pin:
-		sButtons[2].state = BTN_PRESS_PENDING;
-		xTimerStartFromISR(tBtnCdebounce,&xHigherPriorityTaskWoken);
-		HAL_NVIC_DisableIRQ(BTN_C_EXTI_IRQn);
-		break;
-	case BTN_D_Pin:
-		sButtons[3].state = BTN_PRESS_PENDING;
-		xTimerStartFromISR(tBtnDdebounce,&xHigherPriorityTaskWoken);
-		HAL_NVIC_DisableIRQ(BTN_D_EXTI_IRQn);
-        break;
-    default:
-        return;
-	}
+    switch (GPIO_Pin) { ///< transition BTN_IDLE -> BTN_PRESS_PENDING
+        case BTN_A_Pin:
+            sButtons[0].state = BTN_PRESS_PENDING;
+            xTimerStartFromISR(tBtnAdebounce, &xHigherPriorityTaskWoken);
+            HAL_NVIC_DisableIRQ(BTN_A_EXTI_IRQn);
+            break;
+        case BTN_B_Pin:
+            sButtons[1].state = BTN_PRESS_PENDING;
+            xTimerStartFromISR(tBtnBdebounce, &xHigherPriorityTaskWoken);
+            HAL_NVIC_DisableIRQ(BTN_B_EXTI_IRQn);
+            break;
+        case BTN_C_Pin:
+            sButtons[2].state = BTN_PRESS_PENDING;
+            xTimerStartFromISR(tBtnCdebounce, &xHigherPriorityTaskWoken);
+            HAL_NVIC_DisableIRQ(BTN_C_EXTI_IRQn);
+            break;
+        case BTN_D_Pin:
+            sButtons[3].state = BTN_PRESS_PENDING;
+            xTimerStartFromISR(tBtnDdebounce, &xHigherPriorityTaskWoken);
+            HAL_NVIC_DisableIRQ(BTN_D_EXTI_IRQn);
+            break;
+        default: return;
+    }
 
-	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)
-{
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
     if (hadc->Instance == ADC1) {
         processJoystickFiltering(dmaBuffer.buff, 0u, dmaBuffer.halfLen);
         updateJoystickPublishedValues();
     }
 }
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
-{
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
     if (hadc->Instance == ADC1) {
         processJoystickFiltering(dmaBuffer.buff, dmaBuffer.halfLen, dmaBuffer.halfLen);
         updateJoystickPublishedValues();

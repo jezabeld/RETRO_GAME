@@ -7,7 +7,7 @@
  * events (UP/DOWN/LEFT/RIGHT) with auto-repeat functionality for menu navigation.
  * ADC data is processed at 100Hz with DMA, and directional events are generated at 50Hz.
  *
- * @date Sep 18, 2025
+ * @date Aug 12, 2025
  * @author jez
  */
 
@@ -24,8 +24,8 @@
 
 /* === Public data type declarations =========================================================== */
 typedef struct {
-    uint16_t jyX;  // X axis (PA1)
-    uint16_t jyY;  // Y axis (PA0)
+    uint16_t jyX; ///< X axis (PA1)
+    uint16_t jyY; ///< Y axis (PA0)
 } joystick_t;
 
 /* === Public variable declarations ============================================================ */
@@ -41,9 +41,9 @@ typedef struct {
  * @param adcHandle Pointer to configured ADC handle for joystick channels
  * @param dmaHandle Pointer to configured DMA handle for circular buffer
  * @param timHandle Pointer to configured timer handle for ADC triggering
- * @return 0 on success, 1 on error (invalid parameters)
+ * @return 0 on success, 1 on error (invalid parameters or HAL initialization failure)
  */
-uint8_t inputInit(ADC_HandleTypeDef* adcHandle, DMA_HandleTypeDef* dmaHandle, TIM_HandleTypeDef* timHandle);
+uint8_t inputInit(ADC_HandleTypeDef *adcHandle, DMA_HandleTypeDef *dmaHandle, TIM_HandleTypeDef *timHandle);
 
 /**
  * @brief Get current filtered joystick axis values
@@ -55,7 +55,7 @@ uint8_t inputInit(ADC_HandleTypeDef* adcHandle, DMA_HandleTypeDef* dmaHandle, TI
  * @param joyPtr Pointer to joystick_t structure to store the result
  * @return 0 on success, 1 on error (invalid parameters)
  */
-uint8_t inputGetJoyAxis(uint8_t axis, joystick_t* joyPtr);
+uint8_t inputGetJoyAxis(uint8_t axis, joystick_t *joyPtr);
 
 /**
  * @brief GPIO EXTI callback for button press detection
