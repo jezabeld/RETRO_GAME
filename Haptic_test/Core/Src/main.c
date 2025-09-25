@@ -17,11 +17,11 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <HapticDrv.h>
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "DRV2605.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,10 +108,12 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-//  drv2605_init_erm_coin(&hi2c1);
-  drv2605_init_erm_bar(&hi2c1);
+  hapticInit(&hi2c1);
+  hapticSelectLibrary(0);
   /* USER CODE END 2 */
 
+//  uint8_t sequence[] = {1, 3, 5, 7, 9, 11, 13, 15};
+//  hapticSetSequence(sequence, 8);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -119,8 +121,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	      // Repetí 4 veces el efecto 1, con 60 ms entre bloque y bloque (puede ser 0)
-	      drv2605_play_repeat(&hi2c1, 1, 4, 60);
+
+    hapticTrigger(1);
+    HAL_Delay(1000);
+    hapticTrigger(2);
+    HAL_Delay(1000);
+    hapticTrigger(3);
+//    HAL_Delay(2000);
+
+
+//    hapticGoSequence();
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
