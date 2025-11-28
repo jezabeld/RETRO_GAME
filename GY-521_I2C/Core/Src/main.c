@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "gy521.h"
+#include "GY521.h"
 #include "API_uart.h"
 #include "API_delay.h"
 /* Private includes ----------------------------------------------------------*/
@@ -102,11 +102,11 @@ int main(void)
   uartInit();
 
   gyro_t myGyro;
-  bool_t gyroStatus;
+  gyroStatus_t gyroStatus;
   int16_t accelX, accelY, accelZ;
 
-  gyroStatus = gyroInit(&myGyro, &hi2c1, (uint8_t)GY_DIR);
-  uartSendString(gyroStatus ? "Connected\r\n" : "Not connected\r\n");
+  gyroStatus = gyroInit(&myGyro, &hi2c1, (uint8_t)GY_DIR, LOW_NOISE_ACC_MODE);
+  uartSendString((gyroStatus == GYRO_OK) ? "Connected\r\n" : "Not connected\r\n");
 
 
   /* USER CODE END 2 */
@@ -116,14 +116,18 @@ int main(void)
   while (1)
   {
 
-	  gyroReadAccel(&myGyro, &accelX, &accelY, &accelZ);
-	  uartSendString("Acc X: ");
-	  uartSendValue(&accelX);
-	  uartSendString(", Acc Y: ");
-	  uartSendValue(&accelY);
-	  uartSendString(", Acc Z: ");
-	  uartSendValue(&accelZ);
-	  uartSendString("\r\nSampling...\r\n");
+	  gyroStatus_t status = gyroReadAccel(&myGyro, &accelX, &accelY, &accelZ);
+	  if(status == GYRO_OK){
+		  uartSendString("Acc X: ");
+		  uartSendValue(&accelX);
+		  uartSendString(", Acc Y: ");
+		  uartSendValue(&accelY);
+		  uartSendString(", Acc Z: ");
+		  uartSendValue(&accelZ);
+		  uartSendString("\r\n");
+	  } else {
+		  uartSendString("Error reading sensor\r\n");
+	  }
 	  HAL_Delay(500);
     /* USER CODE END WHILE */
 
