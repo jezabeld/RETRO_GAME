@@ -94,15 +94,33 @@ enum {
 /* ======================
  * Audio Player (AUP_)
  * ====================== */
-    AUP_BEEP_1 = 40,      
+    AUP_BEEP_1 = 40,
     AUP_BEEP_2,
     AUP_BEEP_3,
-    AUP_BEEP_4,           
+    AUP_BEEP_4,
+
+/* ======================
+ * Haptic Engine (HAP_)
+ * ====================== */
+    HAP_LIGHT_CLICK = 45,     // Light single click
+    HAP_MEDIUM_CLICK,         // Medium strength click
+    HAP_STRONG_CLICK,         // Strong single click
+    HAP_DOUBLE_CLICK,         // Double click pattern
+    HAP_TRIPLE_CLICK,         // Triple click pattern
+    HAP_SOFT_BUZZ,            // Soft continuous buzz
+    HAP_ALERT_BUZZ,           // Alert buzz pattern
+    HAP_SUCCESS_PULSE,        // Success confirmation pulse
+    HAP_ERROR_BUZZ,           // Error indication buzz
+    // HAP_INTENSITY_LOW,        // Set intensity to low (25%)
+    // HAP_INTENSITY_MEDIUM,     // Set intensity to medium (60%)
+    // HAP_INTENSITY_HIGH,       // Set intensity to high (100%)
+    // HAP_STOP_ALL,             // Stop all haptic feedback
+    // HAP_TEST_PATTERN,         // Test pattern for diagnostics
 
 /* ======================
  * Input crudos (RAW_)
  * ====================== */
-	RAW_BTN_A_DOWN = 50,
+	RAW_BTN_A_DOWN = 60,
 	RAW_BTN_B_DOWN,
 	RAW_BTN_C_DOWN,
 	RAW_BTN_D_DOWN,
@@ -114,7 +132,7 @@ enum {
 /* ======================
  * Input procesados (INP_)
  * ====================== */
-	INP_BTN_A = 65,
+	INP_BTN_A = 70,
 	INP_BTN_B,
 	INP_BTN_C,
 	INP_BTN_D,
@@ -151,13 +169,19 @@ enum {
  * DEBUG_LEVEL >= 2 (FULL DEBUG)
  * ====================== */
 //#if DEBUG_LEVEL >= 2
-	SE_GFX_INIT = 120,     // GraphEngine: LVGL inicializado (solo para test)
+	SE_GFX_INIT = 110,     // GraphEngine: LVGL inicializado (solo para test)
 	SE_GFX_RUNNING,        // GraphEngine: indicador de actividad (solo para test)
 	SE_UI_SUSPENDING,
 	SE_INH_ACTION_SENT,
 	SE_RDX_RENDER_SENT,
 	SE_GFX_GAME_MODE,
 //#endif
+
+/* ======================
+ * Errors
+ * ====================== */
+    SE_ERROR = 120,
+    SE_WARNING,
 };
 
 #endif /* INC_SYNCHRONIZATION_H_ */

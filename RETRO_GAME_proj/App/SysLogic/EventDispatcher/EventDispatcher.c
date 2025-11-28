@@ -122,7 +122,20 @@ static void routeEvent(event_id_t event) {
         case AUP_BEEP_4:
             xQueueSend(qAudio, &event, 0);
             break;
-            
+
+        // Haptic Engine Events -> qHaptic
+        case HAP_LIGHT_CLICK:
+        case HAP_MEDIUM_CLICK:
+        case HAP_STRONG_CLICK:
+        case HAP_DOUBLE_CLICK:
+        case HAP_TRIPLE_CLICK:
+        case HAP_SOFT_BUZZ:
+        case HAP_ALERT_BUZZ:
+        case HAP_SUCCESS_PULSE:
+        case HAP_ERROR_BUZZ:
+            xQueueSend(qHaptic, &event, 0);
+            break;
+
         default:
             // Evento desconocido - silencioso
             break;

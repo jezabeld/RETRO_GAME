@@ -29,6 +29,7 @@
 #include "AudioDrv.h"
 #include "AudioPlayer.h"
 #include "HapticDrv.h"
+#include "HapticEngine.h"
 #include "InputDrv.h"
 #include "TimerDrv.h"
 #include "synchronization.h"
@@ -49,6 +50,7 @@ extern SPI_HandleTypeDef hspi1;         // SPI para la pantalla
 extern ADC_HandleTypeDef hadc1;
 extern DMA_HandleTypeDef hdma_adc1;
 extern TIM_HandleTypeDef htim2;
+extern I2C_HandleTypeDef hi2c1;
 
 /* ===== Handlers de tareas ===== */
 TaskHandle_t tskEvntDisp;
@@ -61,6 +63,7 @@ TaskHandle_t tskSysMng;
 TaskHandle_t tskPersist;
 TaskHandle_t tskLogSink;
 TaskHandle_t tskAudioPlyr;
+TaskHandle_t tskHapticEng;
 
 /* ===== Handlers de colas ===== */
 QueueHandle_t qEvents;
@@ -88,9 +91,10 @@ TimerHandle_t tBtnDdebounce;
 SemaphoreHandle_t semGFXReady;
 SemaphoreHandle_t semUiReady;
 
-/* Instancias globales de audio y pantalla */
+/* Instancias globales */
 audioDrv_t audioDriver;
 tft_t myTft;
+haptic_t hapticDevice;
 
 void bootInit(void)
 {
@@ -109,7 +113,8 @@ void bootInit(void)
 	uint8_t audioResult = audioInit(&audioDriver, &htim3, TIM_CHANNEL_3, &htim6, &hdma_tim6_up, AUDIO_FS_HZ);
 	while (audioResult != 0){/*error*/};
 
-	hapticInit();
+	uint8_t hapticResult = hapticInit(&hapticDevice, &hi2c1);
+	while (hapticResult != 0) {/*error*/};
     
 	uint8_t inputResult = inputInit(&hadc1, &hdma_adc1, &htim2);
 	while (inputResult != 0) {/*error*/};
@@ -190,6 +195,9 @@ void bootInit(void)
     configASSERT(pdPASS == ret);
 
     ret = xTaskCreate(AudioPlayerTask, "AudioPlyr", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskAudioPlyr);
+    configASSERT(pdPASS == ret);
+
+    ret = xTaskCreate(HapticEngineTask, "HapticEng", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, &tskHapticEng);
     configASSERT(pdPASS == ret);
 
     /* ===== CREACIÓN DE TIMERS ===== */

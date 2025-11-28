@@ -78,37 +78,41 @@ void UIControllerTask(void *pvParameters)
                 // Botones
 				case INP_BTN_A:
 					lv_port_indev_btn_a_pressed();
-					// Enviar evento de sonido para botón A
 					sendEvent(AUP_BEEP_1);
+					sendEvent(HAP_LIGHT_CLICK);
 					break;
 				case INP_BTN_B:
 					lv_port_indev_btn_b_pressed();
-					// Enviar evento de sonido para botón B
 					sendEvent(AUP_BEEP_2);
+					sendEvent(HAP_MEDIUM_CLICK);
 					break;
 				case INP_BTN_C:
 					lv_port_indev_btn_c_pressed();
-					// Enviar evento de sonido para botón C
 					sendEvent(AUP_BEEP_3);
+					sendEvent(HAP_STRONG_CLICK);
 					break;
 				case INP_BTN_D:
 					lv_port_indev_btn_d_pressed();
-					// Enviar evento de sonido para botón D
 					sendEvent(AUP_BEEP_4);
+					sendEvent(HAP_DOUBLE_CLICK);
 					break;
 
                 // Joystick direccional
 				case INP_JY_UP:
 					lv_port_indev_joy_up_pressed();
+					sendEvent(HAP_SOFT_BUZZ);
 					break;
 				case INP_JY_DOWN:
 					lv_port_indev_joy_down_pressed();
+					sendEvent(HAP_SOFT_BUZZ);
 					break;
 				case INP_JY_LEFT:
 					lv_port_indev_joy_left_pressed();
+					sendEvent(HAP_SOFT_BUZZ);
 					break;
 				case INP_JY_RIGHT:
 					lv_port_indev_joy_right_pressed();
+					sendEvent(HAP_SOFT_BUZZ);
 					break;
 
                 default:
