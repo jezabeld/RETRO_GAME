@@ -18,12 +18,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "GY521.h"
-#include "API_uart.h"
-#include "API_delay.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "AccelJoystickDrv.h"
+#include "API_uart.h"
+#include "API_delay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +43,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+
+TIM_HandleTypeDef htim4;
 
 //UART_HandleTypeDef huart2;
 
@@ -54,8 +57,10 @@ I2C_HandleTypeDef hi2c1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART2_UART_Init(void);
+static void MX_DMA_Init(void);
+//static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -94,19 +99,21 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   //MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
   /* MAIN USER CODE ***********************************************************/
   uartInit();
 
-  gyro_t myGyro;
-  gyroStatus_t gyroStatus;
-  int16_t accelX, accelY, accelZ;
+  accelStatus_t accelStatus;
+  accelTilt_t tilt;
 
-  gyroStatus = gyroInit(&myGyro, &hi2c1, (uint8_t)GY_DIR, LOW_NOISE_ACC_MODE);
-  uartSendString((gyroStatus == GYRO_OK) ? "Connected\r\n" : "Not connected\r\n");
+  // Initialize accelerometer with DMA continuous reading 
+  accelStatus = accelDrvInit(&hi2c1, &htim4, (uint8_t)GY_DIR, ACCEL_LOW_NOISE_MODE);
+  uartSendString((accelStatus == ACCEL_OK) ? "Accel initialized (DMA mode)\r\n" : "Accel init failed\r\n");
 
 
   /* USER CODE END 2 */
@@ -116,18 +123,15 @@ int main(void)
   while (1)
   {
 
-	  gyroStatus_t status = gyroReadAccel(&myGyro, &accelX, &accelY, &accelZ);
-	  if(status == GYRO_OK){
-		  uartSendString("Acc X: ");
-		  uartSendValue(&accelX);
-		  uartSendString(", Acc Y: ");
-		  uartSendValue(&accelY);
-		  uartSendString(", Acc Z: ");
-		  uartSendValue(&accelZ);
-		  uartSendString("\r\n");
-	  } else {
-		  uartSendString("Error reading sensor\r\n");
-	  }
+	  // Non-blocking read of filtered tilt values
+	  accelDrvGetTilt(&tilt);
+
+	  uartSendString("Tilt X: ");
+	  uartSendValue(&tilt.tiltX);
+	  uartSendString(", Tilt Y: ");
+	  uartSendValue(&tilt.tiltY);
+	  uartSendString("\r\n");
+
 	  HAL_Delay(500);
     /* USER CODE END WHILE */
 
@@ -218,13 +222,57 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 8340-1;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 100-1;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
   */
 /*static void MX_USART2_UART_Init(void)
 {
-
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
@@ -238,8 +286,23 @@ static void MX_I2C1_Init(void)
     Error_Handler();
   }
 
-
 }*/
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+
+}
 
 /**
   * @brief GPIO Initialization Function
