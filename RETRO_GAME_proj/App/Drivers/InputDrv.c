@@ -361,7 +361,7 @@ static joyKey_t getDominantDirection(uint16_t x, uint16_t y, joyKey_t prev) {
     if (ax >= ay)
         return (dx >= 0) ? JOY_KEY_RIGHT : JOY_KEY_LEFT;
     else
-        return (dy >= 0) ? JOY_KEY_DOWN : JOY_KEY_UP;
+        return (dy >= 0) ? JOY_KEY_UP : JOY_KEY_DOWN;
 }
 
 /* === Public function implementation ========================================================== */
