@@ -13,6 +13,7 @@
 /* === Headers files inclusions ================================================================ */
 
 #include "HapticDrv.h"
+#include "TimerDrv.h"
 
 /* === Private macros definitions ============================================================== */
 
@@ -110,27 +111,13 @@ static HAL_StatusTypeDef _rd(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t *val)
 }
 
 /**
- * @brief Busy-wait delay for haptic driver
- *
- * CPU cycle-based delay that works before FreeRTOS scheduler starts.
- *
- * @param ms Delay time in milliseconds
- */
-static void hapticDelay(uint32_t ms) {
-    volatile uint32_t count = ms * 21000; // Calibrated for 84MHz CPU
-    while (count--) {
-        __NOP(); // Prevent compiler optimization
-    }
-}
-
-/**
  * @brief Perform soft reset of DRV2605
  * @param hi2c Pointer to I2C handle
  * @return HAL_StatusTypeDef Operation status
  */
 static HAL_StatusTypeDef _soft_reset(I2C_HandleTypeDef *hi2c) {
     HAL_StatusTypeDef st = _wr(hi2c, DRV2605_REG_MODE, 0x80);
-    hapticDelay(2);
+    timerDelayMs(2);
     return st;
 }
 

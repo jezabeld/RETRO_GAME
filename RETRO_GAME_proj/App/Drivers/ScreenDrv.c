@@ -15,6 +15,7 @@
 /* === Headers files inclusions ================================================================ */
 
 #include "ScreenDrv.h"
+#include "TimerDrv.h"
 #include "string.h"
 #include "stdlib.h"
 
@@ -101,13 +102,6 @@
 /* === Private variable declarations =========================================================== */
 
 /* === Private function declarations =========================================================== */
-
-/**
- * @brief Software delay using CPU cycles (blocking)
- * @param ms Delay time in milliseconds
- * @note Approximate delay for 84MHz clock, adjust multiplier for different frequencies
- */
-static void tftDelay(uint32_t ms);
 
 /**
  * @brief Assert Chip Select pin (CS low)
@@ -252,18 +246,6 @@ static const uint8_t initCmds[] = {
 
 /* === Private function implementation ========================================================= */
 
-/**
- * @brief Software delay using CPU cycles (blocking)
- * @param ms Delay time in milliseconds
- * @note Approximate delay for 84MHz clock, adjust multiplier for different frequencies
- */
-static void tftDelay(uint32_t ms) {
-    volatile uint32_t count = ms * 21000; // Adjust multiplier based on CPU frequency
-    while (count--) {
-        __NOP(); // Prevent compiler optimization
-    }
-}
-
 /* === Public function implementation ========================================================== */
 
 void tftSelect(tft_t *tft) {
@@ -275,9 +257,9 @@ void tftUnselect(tft_t *tft) {
 void tftReset(tft_t *tft) {
     // Hardware reset sequence per ST7735R datasheet
     HAL_GPIO_WritePin(tft->resPort, tft->resPin, GPIO_PIN_RESET);
-    tftDelay(10); // Hold reset for 10ms
+    timerDelayMs(10); // Hold reset for 10ms
     HAL_GPIO_WritePin(tft->resPort, tft->resPin, GPIO_PIN_SET);
-    tftDelay(120); // Wait for controller stabilization
+    timerDelayMs(120); // Wait for controller stabilization
 }
 
 void tftWriteCommand(tft_t *tft, uint8_t cmd) {
@@ -343,7 +325,7 @@ void tftExecuteCommandList(tft_t *tft, const uint8_t *addr) {
         if (ms) {
             ms = *(addr++);
             if (ms == 255) ms = MAX_DELAY_MS; // Special case for max delay
-            tftDelay(ms);
+            timerDelayMs(ms);
         }
     }
 }
