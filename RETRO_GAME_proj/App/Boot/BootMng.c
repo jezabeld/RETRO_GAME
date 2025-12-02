@@ -41,6 +41,7 @@
 
 #define QUEUE_SIZE 10
 #define AUDIO_FS_HZ   10000u   // frecuencia de muestreo (TIM6 Update)
+#define GY_DIR        0x68     // Dirección I2C del MPU-6500 (AD0=GND)
 
 /* Handles externos para audio y pantalla */
 extern TIM_HandleTypeDef htim3;         // PWM timer para PB0 
@@ -50,6 +51,7 @@ extern SPI_HandleTypeDef hspi1;         // SPI para la pantalla
 extern ADC_HandleTypeDef hadc1;
 extern DMA_HandleTypeDef hdma_adc1;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim4;
 extern I2C_HandleTypeDef hi2c1;
 
 /* ===== Handlers de tareas ===== */
@@ -103,24 +105,37 @@ void bootInit(void)
 	uartSendString("BootMng: Iniciando sistema...\r\n");
 	
 	uartSendString("BootMng: Inicializando drivers...\r\n");
-	accelDrvInit();
-	eepromDrvInit();
+
 	uint8_t tftResult = tftInit(&myTft, &hspi1, TFT_CS_GPIO_Port, TFT_CS_Pin, TFT_DC_GPIO_Port, TFT_DC_Pin, TFT_RS_GPIO_Port, TFT_RS_Pin);
-	while (tftResult != 0) {/*error*/};
+	while (tftResult != 0) {/*error*/
+		uartSendString("BootMng: Error init pantalla.\r\n");
+	};
+
 	tftFillScreen(&myTft, 0x0000); // Limpiar pantalla con negro
 	tftDrawImage(&myTft, 0, 0, TFT_WIDTH, TFT_HEIGHT, (uint16_t*)imgSplash);
-	// Inicializar driver de audio 
+
+	accelStatus_t accelResult = accelDrvInit(&hi2c1, &htim4, GY_DIR, ACCEL_LOW_NOISE_MODE);
+	while (accelResult != ACCEL_OK) {/*error*/
+		uartSendString("BootMng: Error init acelerometro.\r\n");
+	};
+
+	eepromDrvInit();
+
 	uint8_t audioResult = audioInit(&audioDriver, &htim3, TIM_CHANNEL_3, &htim6, &hdma_tim6_up, AUDIO_FS_HZ);
-	while (audioResult != 0){/*error*/};
+	while (audioResult != 0){/*error*/
+		uartSendString("BootMng: Error init audio.\r\n");
+	};
 
 	uint8_t hapticResult = hapticInit(&hapticDevice, &hi2c1);
-	while (hapticResult != 0) {/*error*/};
+	while (hapticResult != 0) {/*error*/
+		uartSendString("BootMng: Error init vibracion.\r\n");
+	};
     
 	uint8_t inputResult = inputInit(&hadc1, &hdma_adc1, &htim2);
-	while (inputResult != 0) {/*error*/};
-	
-	uint8_t timerResult = timerInit();
-	while (timerResult != 0){/*error*/};
+	while (inputResult != 0) {/*error*/
+		uartSendString("BootMng: Error init input driver.\r\n");
+	};
+
 	uartSendString("BootMng: Drivers inicializados\r\n");
 
     BaseType_t ret;

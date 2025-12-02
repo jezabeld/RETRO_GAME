@@ -52,6 +52,10 @@
   #include <stdint.h>
   extern uint32_t SystemCoreClock;
   void xPortSysTickHandler(void);
+/* USER CODE BEGIN 0 */
+  extern void configureTimerForRunTimeStats(void);
+  extern unsigned long getRunTimeCounterValue(void);
+/* USER CODE END 0 */
 #endif
 #define configENABLE_FPU                         0
 #define configENABLE_MPU                         0
