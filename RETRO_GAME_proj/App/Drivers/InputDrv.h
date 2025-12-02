@@ -24,8 +24,8 @@
 
 /* === Public data type declarations =========================================================== */
 typedef struct {
-    uint16_t jyX; ///< X axis (PA1)
-    uint16_t jyY; ///< Y axis (PA0)
+    int16_t jyX; ///< X axis, normalized to -1024..+1023 (center = 0, 2048 values)
+    int16_t jyY; ///< Y axis, normalized to -1024..+1023 (center = 0, 2048 values)
 } joystick_t;
 
 /* === Public variable declarations ============================================================ */
@@ -46,14 +46,17 @@ typedef struct {
 uint8_t inputInit(ADC_HandleTypeDef *adcHandle, DMA_HandleTypeDef *dmaHandle, TIM_HandleTypeDef *timHandle);
 
 /**
- * @brief Get current filtered joystick axis values
+ * @brief Get current filtered joystick axis values (normalized)
  *
- * Returns the latest EMA-filtered joystick position values. Values are updated
- * at 50Hz by the DMA complete callback and represent 12-bit ADC readings.
+ * Returns the latest EMA-filtered and normalized joystick position values.
+ * Values are updated at 50Hz by the DMA complete callback.
  *
  * @param axis Axis to read (0=X axis, 1=Y axis, 2=both axes)
  * @param joyPtr Pointer to joystick_t structure to store the result
  * @return 0 on success, 1 on error (invalid parameters)
+ *
+ * @note Values normalized: -1024..+1023 range (2048 values), center position = 0
+ * @note Hardware-independent output, suitable for direct use in game logic
  */
 uint8_t inputGetJoyAxis(uint8_t axis, joystick_t *joyPtr);
 

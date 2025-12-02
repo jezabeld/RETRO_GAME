@@ -222,14 +222,25 @@ static void processJoystickFiltering(const uint16_t *buf, uint32_t base, uint32_
 }
 
 /**
- * @brief Update published joystick position values
+ * @brief Update published joystick position values with normalization
  *
- * Copies the latest filtered joystick values to the published structure
- * that is accessible via inputGetJoyAxis() function.
+ * Normalizes the latest filtered joystick values from ADC range (0-4095)
+ * to -1024..+1023 range (2048 values) and publishes them for access via inputGetJoyAxis().
  */
 static void updateJoystickPublishedValues(void) {
-    publishedJoy.jyX = joyFilter.procX;
-    publishedJoy.jyY = joyFilter.procY;
+    // Normalize ADC values (0-4095) to -1024..+1023 range
+    // Center (2048) → 0, Min (0) → -1024, Max (4095) → +1023
+    int32_t normX = (((int32_t)joyFilter.procX - (int32_t)JY_CENTER_X) * 2048) / (int32_t)ADC_MAX_12B;
+    int32_t normY = (((int32_t)joyFilter.procY - (int32_t)JY_CENTER_Y) * 2048) / (int32_t)ADC_MAX_12B;
+
+    // Clamp to -1024..+1023
+    if (normX < -1024) normX = -1024;
+    if (normX > 1023) normX = 1023;
+    if (normY < -1024) normY = -1024;
+    if (normY > 1023) normY = 1023;
+
+    publishedJoy.jyX = (int16_t)normX;
+    publishedJoy.jyY = (int16_t)normY;
 }
 
 /**
@@ -237,13 +248,14 @@ static void updateJoystickPublishedValues(void) {
  *
  * Processes the joystick directional state machine at 50Hz, handling state
  * transitions and generating directional events (INP_JY_UP, DOWN, LEFT, RIGHT)
- * with auto-repeat functionality.
+ * with auto-repeat functionality. Uses raw ADC values for directional detection.
  */
 static void generateJoysticDirectionEvents(void) {
-    uint32_t r = calculateRadius(publishedJoy.jyX, publishedJoy.jyY);
+    // Use raw ADC values for directional state machine (not normalized values)
+    uint32_t r = calculateRadius(joyFilter.procX, joyFilter.procY);
     sJoyStatus.updated_at = HAL_GetTick();
     uint8_t shouldPublish = 0;
-    joyKey_t k = getDominantDirection(publishedJoy.jyX, publishedJoy.jyY, sJoyStatus.heldKey);
+    joyKey_t k = getDominantDirection(joyFilter.procX, joyFilter.procY, sJoyStatus.heldKey);
 
     switch (sJoyStatus.state) {
         case JY_CENTER:
